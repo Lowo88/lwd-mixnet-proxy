@@ -42,6 +42,24 @@ use tokio::time::Instant;
 /// short enough not to spend the session on a dead client.
 const REFUSAL_STREAK_LIMIT: usize = 5;
 
+/// Every configuration under test, as the cross product of the axes given on the command line.
+fn arms(arguments: &Arguments) -> Vec<Arm> {
+    let gaps: Vec<Option<u64>> = match &arguments.gap_secs {
+        Some(gaps) => gaps.iter().copied().map(Some).collect(),
+        None => vec![None],
+    };
+    arguments
+        .concurrency
+        .iter()
+        .flat_map(|concurrency| {
+            gaps.iter().map(move |gap| Arm {
+                concurrency: concurrency.get(),
+                gap_secs: *gap,
+            })
+        })
+        .collect()
+}
+
 #[derive(Parser)]
 #[command(
     about = "Measure how often a probed stream answers, and what it costs",
@@ -65,6 +83,16 @@ struct Arguments {
     #[arg(long, value_delimiter = ',', default_value = "1,3")]
     concurrency: Vec<NonZeroU32>,
 
+    /// Quiet gaps to leave before the measured stream is opened, in seconds, rotated one per trial.
+    ///
+    /// Set this to test whether the failure belongs to the stream or to the first real message after
+    /// a pause. Each trial opens a warm-up stream and sends its header, waits the gap, and only then
+    /// opens the stream it measures, so the clock starts at a known moment rather than at whatever
+    /// the previous trial happened to end on. A rising failure rate across gaps says the pause is
+    /// what matters; a flat one says the stream is.
+    #[arg(long, value_delimiter = ',')]
+    gap_secs: Option<Vec<u64>>,
+
     #[arg(long, default_value_t = 10)]
     probe_timeout_secs: u64,
 
@@ -72,9 +100,27 @@ struct Arguments {
     reply_surbs: Option<u32>,
 }
 
-struct Trial {
-    /// Round size this trial was dialled with.
+/// One configuration under test. Trials rotate through these so every configuration meets the same
+/// conditions, which on a transport that drifts by an order of magnitude is the only way two of them
+/// can be compared at all.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+struct Arm {
     concurrency: u32,
+    /// Quiet gap left before the measured stream was opened, or `None` when not under test.
+    gap_secs: Option<u64>,
+}
+
+impl std::fmt::Display for Arm {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.gap_secs {
+            Some(gap) => write!(formatter, "rounds of {}, {gap}s gap", self.concurrency),
+            None => write!(formatter, "rounds of {}", self.concurrency),
+        }
+    }
+}
+
+struct Trial {
+    arm: Arm,
     rounds: Vec<Round>,
     /// How long the whole trial took, retries included. This is what a wallet waits.
     total: Duration,
@@ -83,6 +129,10 @@ struct Trial {
 }
 
 impl Trial {
+    fn concurrency(&self) -> u32 {
+        self.arm.concurrency
+    }
+
     fn answered(&self) -> bool {
         self.established.is_some()
     }
@@ -148,26 +198,39 @@ async fn main() -> Result<()> {
             .map_or("SDK default".to_owned(), |surbs| surbs.to_string()),
     );
 
+    let arms = arms(&arguments);
     let mut trials = Vec::with_capacity(arguments.trials);
     let mut refusing_streak = 0usize;
 
     for number in 1..=arguments.trials {
-        let concurrency = arguments.concurrency[(number - 1) % arguments.concurrency.len()];
+        let arm = arms[(number - 1) % arms.len()];
         let settings = DialSettings {
             reply_surbs: arguments.reply_surbs,
             probe: Some(ProbeSettings {
                 timeout: Duration::from_secs(arguments.probe_timeout_secs),
                 attempts: arguments.attempts,
-                concurrency,
+                concurrency: NonZeroU32::new(arm.concurrency).unwrap_or(NonZeroU32::MIN),
             }),
         };
 
-        let trial = run_trial(&client, server, settings, concurrency.get()).await;
+        // With a gap under test, the trial starts from a known moment rather than from wherever the
+        // previous one happened to end, which differs by seconds depending on whether it was
+        // answered or timed out.
+        if let Some(gap) = arm.gap_secs {
+            warm_up(&client, server, settings).await;
+            tokio::time::sleep(Duration::from_secs(gap)).await;
+        }
+
+        let trial = run_trial(&client, server, settings, arm).await;
         // Single-word outcomes: a space here would shift every column after it for whoever parses
         // this later.
         println!(
-            "{number:>5}  r{:<2} {:<8} {:>2} rounds  {:>2} unanswered  {:>2} refused  {:>6} ms",
-            trial.concurrency,
+            "{number:>5}  r{:<2}{:<5} {:<8} {:>2} rounds  {:>2} unanswered  {:>2} refused  {:>6} ms",
+            trial.concurrency(),
+            trial
+                .arm
+                .gap_secs
+                .map_or(String::new(), |gap| format!("g{gap}")),
             if trial.answered() {
                 "answered"
             } else {
@@ -202,24 +265,35 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
+/// Open a stream, send its header, and let it go, so a known instant of real traffic sits just
+/// before the gap. Its outcome is deliberately not waited for or recorded: it exists to mark time,
+/// not to be measured.
+async fn warm_up(client: &Mutex<MixnetClient>, server: Recipient, settings: DialSettings) {
+    let mut warming = settings;
+    warming.probe = None;
+    if let Ok(dialled) = dial::dial(client, server, warming).await {
+        drop(dialled.stream);
+    }
+}
+
 async fn run_trial(
     client: &Mutex<MixnetClient>,
     server: Recipient,
     settings: DialSettings,
-    concurrency: u32,
+    arm: Arm,
 ) -> Trial {
     let started = Instant::now();
     match dial::dial(client, server, settings).await {
         // The stream is dropped rather than used: the server half connects to its upstream only
         // once a request arrives, so a measured stream never reaches the node.
         Ok(dialled) => Trial {
-            concurrency,
+            arm,
             rounds: dialled.rounds,
             total: started.elapsed(),
             established: Some(dialled.elapsed),
         },
         Err(gave_up) => Trial {
-            concurrency,
+            arm,
             rounds: gave_up.rounds,
             total: started.elapsed(),
             established: None,
@@ -237,47 +311,43 @@ fn report(trials: &[Trial], arguments: &Arguments) {
         );
     }
 
-    let arms: Vec<(u32, Vec<&Trial>)> = arguments
-        .concurrency
-        .iter()
-        .map(|size| {
-            let size = size.get();
+    let grouped: Vec<(Arm, Vec<&Trial>)> = arms(arguments)
+        .into_iter()
+        .map(|arm| {
             (
-                size,
-                trials
-                    .iter()
-                    .filter(|trial| trial.concurrency == size)
-                    .collect(),
+                arm,
+                trials.iter().filter(|trial| trial.arm == arm).collect(),
             )
         })
         .collect();
 
-    for (size, arm) in &arms {
-        report_arm(*size, arm, arguments.probe_timeout_secs);
+    for (arm, group) in &grouped {
+        report_arm(*arm, group, arguments.probe_timeout_secs);
     }
-    if arms.len() > 1 {
-        compare(&arms);
+    if grouped.len() > 1 {
+        compare(&grouped);
     }
 }
 
-fn report_arm(size: u32, arm: &[&Trial], probe_timeout_secs: u64) {
-    let total = arm.len();
+fn report_arm(arm: Arm, group: &[&Trial], probe_timeout_secs: u64) {
+    let size = arm.concurrency;
+    let total = group.len();
     if total == 0 {
         return;
     }
-    let first_round_failures = arm
+    let first_round_failures = group
         .iter()
         .filter(|trial| trial.first_round_failed())
         .count();
-    let visible_failures = arm.iter().filter(|trial| !trial.answered()).count();
-    let opened: usize = arm.iter().map(|trial| trial.opened()).sum();
-    let cancelled: usize = arm.iter().map(|trial| trial.cancelled()).sum();
+    let visible_failures = group.iter().filter(|trial| !trial.answered()).count();
+    let opened: usize = group.iter().map(|trial| trial.opened()).sum();
+    let cancelled: usize = group.iter().map(|trial| trial.cancelled()).sum();
 
     let first_round_rate = ratio(first_round_failures, total);
     let visible_rate = ratio(visible_failures, total);
 
     println!(
-        "\n=== rounds of {size} ({}) ===",
+        "\n=== {arm} ({}) ===",
         if size == 1 {
             "sequential retry"
         } else {
@@ -323,24 +393,24 @@ fn report_arm(size: u32, arm: &[&Trial], probe_timeout_secs: u64) {
         );
     }
 
-    conditional_rates(arm);
-    within_round(arm);
-    latency(arm, probe_timeout_secs);
+    conditional_rates(group);
+    within_round(group);
+    latency(group, probe_timeout_secs);
 }
 
 /// Put the arms side by side, and check the assumption that makes larger rounds worth opening.
-fn compare(arms: &[(u32, Vec<&Trial>)]) {
+fn compare(arms: &[(Arm, Vec<&Trial>)]) {
     println!("\n=== comparison, interleaved in the same window ===");
-    print!("{:32}", "");
-    for (size, _) in arms {
-        print!("{:>14}", format!("rounds of {size}"));
+    print!("{:28}", "");
+    for (arm, _) in arms {
+        print!("{:>20}", arm.to_string());
     }
     println!();
 
     let row = |label: &str, value: &dyn Fn(&[&Trial]) -> String| {
-        print!("{label:32}");
-        for (_, arm) in arms {
-            print!("{:>14}", value(arm));
+        print!("{label:28}");
+        for (_, group) in arms {
+            print!("{:>20}", value(group));
         }
         println!();
     };
@@ -378,7 +448,12 @@ fn compare(arms: &[(u32, Vec<&Trial>)]) {
     // if simultaneous streams fail independently, a round of N fails at the per-stream rate to the
     // Nth. Observing far worse means the failure belongs to the moment rather than to the stream,
     // and opening more at once buys less than the arithmetic suggests.
-    let Some((_, sequential)) = arms.iter().find(|(size, _)| *size == 1) else {
+    // Only meaningful when round size is the axis under test: a per-stream rate exists to be
+    // squared only if some arm actually opened one stream at a time.
+    if arms.iter().all(|(arm, _)| arm.concurrency == 1) {
+        return;
+    }
+    let Some((_, sequential)) = arms.iter().find(|(arm, _)| arm.concurrency == 1) else {
         return;
     };
     let per_stream = ratio(
@@ -394,14 +469,15 @@ fn compare(arms: &[(u32, Vec<&Trial>)]) {
         "  per-stream failure rate, from rounds of 1   {:>7.2}%",
         100.0 * per_stream
     );
-    for (size, arm) in arms.iter().filter(|(size, _)| *size > 1) {
-        let predicted = per_stream.powi(*size as i32);
+    for (arm, group) in arms.iter().filter(|(arm, _)| arm.concurrency > 1) {
+        let predicted = per_stream.powi(arm.concurrency as i32);
         let observed = ratio(
-            arm.iter().filter(|t| t.first_round_failed()).count(),
-            arm.len(),
+            group.iter().filter(|t| t.first_round_failed()).count(),
+            group.len(),
         );
         println!(
-            "  a round of {size} should then fail            {:>7.2}%,  observed {:>6.2}%",
+            "  a round of {} should then fail             {:>7.2}%,  observed {:>6.2}%",
+            arm.concurrency,
             100.0 * predicted,
             100.0 * observed
         );

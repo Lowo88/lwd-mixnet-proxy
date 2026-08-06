@@ -14,7 +14,7 @@ One trial is one dial. Round sizes are **interleaved trial by trial** rather tha
 sessions, and per-round conditional rates are recorded so that whether retrying multiplies is measured
 rather than assumed. The reasoning behind both is in ADR 0005.
 
-Three runs were made. The two that were thrown out are reported because what invalidated them is a
+Four runs were made. The two that were thrown out are reported because what invalidated them is a
 result in itself.
 
 ## Run 3: rounds of 1 against rounds of 3, interleaved
@@ -48,11 +48,42 @@ three cost 3.0 streams per connection instead of 1.4, and the reply-block budget
 At a 34.67% per-stream rate, a round of three should fail 4.17% of the time. It failed 0.67%, one
 round in 150, where about six were expected.
 
-An explanation this run cannot confirm: the per-stream rate may belong to **the first message after a
-pause** rather than to the stream. In the sequential arm every trial opens its first stream after a
-wait, while in the hedged arm only one of the three does and the other two follow immediately. If that
-is what is happening, keeping traffic warm would reduce failures, and it would explain why measured
-rates have varied so widely across sessions. Deciding this needs an experiment designed for it.
+The explanation that suggested itself was that the per-stream rate might belong to **the first message
+after a pause** rather than to the stream: in the sequential arm every trial opens its first stream
+after a wait, while in the hedged arm only one of the three does. That was tested directly and does
+not hold, so the discrepancy remains unexplained and is most likely chance. One observed event against
+six expected is a p of about 1.4%, which is not much against a run in which several numbers were being
+watched at once.
+
+## Run 4: does traffic have to be warm?
+
+If the failure belonged to the first real message after a quiet period, keeping traffic warm would
+reduce it, and that would matter well beyond this project.
+
+Each trial opened a warm-up stream, sent its header without waiting for anything back, waited a gap,
+and only then opened the stream it measured, with no retry so that every trial is one clean sample.
+Gaps of 0, 2, 8 and 20 seconds were rotated one per trial. Starting the clock from the warm-up rather
+than from the previous trial matters: a previous trial ends either on an answer or on a deadline,
+seconds apart, which would smear the variable being set.
+
+| gap before the measured stream | failure rate |
+|---|---|
+| 0 s | 31.4% |
+| 2 s | 23.5% |
+| 8 s | 35.3% |
+| 20 s | 29.4% |
+
+137 clean trials, about 34 per arm, at a 29.9% overall rate. One standard error per arm is about 7.9
+points, so all four are one number. **The gap makes no difference**, and the ordering does not even
+run the predicted way: the warmest arm failed slightly more than the coldest.
+
+A second check points the same way. Every trial in this run is preceded by a warm-up message, and the
+overall rate, 29.9%, is what the earlier run measured with no warm-up at all. Adding real traffic
+immediately before a stream changed nothing.
+
+**What this does not rule out**: if the effect existed but lasted longer than 20 s, every arm here
+would be equally warm and the result would look flat for the wrong reason. Ruling that out needs gaps
+of minutes, which costs a run long enough to hit the problem described in the next section.
 
 ## Run 1: what a broken measuring apparatus looks like
 
@@ -72,7 +103,7 @@ Restricted to the first 200 trials, where no open was refused, the same run read
 wallet-visible, an 11.2x reduction, and **flat** conditional rates of 45.0%, 45.6%, 41.5%, 47.1%,
 against 4.10% predicted by independence and 4.00% observed.
 
-**Most of that was the machine, not the client.** Checking `pmset -g log` against the three runs
+**Most of that was the machine, not the client.** Checking `pmset -g log` against all four runs
 afterwards: this run and the warm-traffic one both had the host entering sleep every two minutes from
 partway through, while the interleaved run above saw none at all and is the one that finished healthy
 after nearly two hours and 670 streams. A client whose host suspends loses its gateway, and everything
@@ -89,9 +120,9 @@ Two things follow, and both are now in the code:
   client fails every round of every trial. They are reported apart, any refusal marks a run invalid,
   and a client that stops opening ends the run instead of finishing it.
 - **A measurement host must be kept awake**, under `caffeinate` or equivalent, and its sleep log
-  checked against the run afterwards. A suspended host does not merely add noise: it produces a
-  confident, wrongly-signed result, since a client that cannot send fails every attempt of every
-  trial.
+  checked against the run afterwards. A suspension corrupts more than the failure rate: in the
+  warm-traffic run above it would corrupt the independent variable itself, turning a 20-second gap
+  into a gap of minutes.
 
 ## Run 2: why interleaving is not optional
 
@@ -118,7 +149,8 @@ in the evaluation that preceded this project, arrived at from a different direct
   wide interval: one observed event is compatible with a fair range of true rates.
 - Only rounds of 1 and 3 were compared, and only at a 10 s deadline with the default reply-block
   budget. Whether 2 is enough, and how the deadline trades against round size, is unmeasured.
-- No run lasted more than about two hours, and one of the three was cut short by the host suspending.
+- The gaps tested for warm traffic reach 20 s. Anything slower-acting than that is invisible here.
+- No run lasted more than about two hours, and two of the four were cut short by the host suspending.
   Nothing here says what a client does over a day, and the bandwidth ceiling seen at six minutes makes
   that a real question rather than a formality.
 - Establishment was measured; throughput once a connection is carrying traffic was not.
