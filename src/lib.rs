@@ -5,3 +5,5 @@
 //! ```text
 //! wallet --TCP--> [lwd-mixnet-client] --mixnet--> [lwd-mixnet-server] --TCP--> lightwalletd
 //! ```
+
+pub mod handshake;
