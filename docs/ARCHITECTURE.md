@@ -1,0 +1,88 @@
+# Architecture
+
+This is a living document. It describes what `lwd-mixnet-proxy` is, how bytes flow through it, and
+what each module is responsible for.
+
+## Mental model
+
+Two processes, each a byte pipe, with the Nym mixnet between them:
+
+```
+  wallet  --TCP-->  [lwd-mixnet-client]  --mixnet-->  [lwd-mixnet-server]  --TCP-->  lightwalletd
+        127.0.0.1:9068                                              127.0.0.1:9067
+```
+
+**Neither half understands gRPC**, and neither needs to. A mixnet stream implements
+`AsyncRead + AsyncWrite`, so an HTTP/2 connection travels through unmodified: the wallet is pointed at
+a local port and sees an ordinary TCP connection, while the server sees an ordinary client. The
+serving half takes its upstream from configuration, so it works in front of any implementation of the
+light-client protocol.
+
+What the halves add is not translation. It is a **deadline**.
+
+## Why a deadline is the whole product
+
+The transport loses a stream's first payload, often and silently: the stream opens, the far side
+accepts it, `write_all` and `flush` both return `Ok`, and nothing arrives. Neither end errors and
+neither times out. Measured over three days, the rate moved between 2% and 51% and is not stationary.
+
+gRPC libraries recover from errors and do not recover from silence. So the value here is the
+conversion of a hang into either an invisible retry or a fast error, and every design choice below
+follows from that one sentence.
+
+## The two halves
+
+**`lwd-mixnet-client`** (`src/bin/client.rs`) runs next to the wallet. It listens on a local TCP port
+and, for each connection, opens a mixnet stream that has been shown to work before splicing the two
+together. Its mixnet identity is deliberately ephemeral: a stable one is exactly what would let a
+server correlate a wallet's requests across sessions.
+
+**`lwd-mixnet-server`** (`src/bin/server.rs`) runs next to the server. It accepts mixnet streams,
+requires each to introduce itself, and splices it to a configured TCP upstream. Its identity is
+persistent, because the address is derived from keys on disk and clients have to be able to find it.
+That directory is private key material.
+
+**`lwd-mixnet-bench`** (`src/bin/bench.rs`) is the measurement, and it drives the same `dial` the
+client half uses rather than a copy of it. See
+[0005](decisions/0005-what-the-measurement-has-to-show.md).
+
+## The library
+
+`src/lib.rs` holds what both halves need and what deserves tests.
+
+**`handshake`** is a 14-byte header: a magic, a version, a flag, and a token. The dialling half sends
+it; the listening half echoes it when asked. This is the probe, and it reproduces the measured failure
+mode exactly, so it filters that failure by construction rather than by hoping. The header is
+mandatory even when the probe is off, because it is also how the listening half tells one of our
+streams from arbitrary mixnet traffic that would otherwise reach the upstream.
+
+**`dial`** opens streams until one answers, grouped into **rounds**. A round of one is a sequential
+retry, where each failure costs a whole deadline before the next attempt starts; a round of several
+opens them at once and takes the first to answer, turning that sum into a minimum at the cost of reply
+blocks. It returns every round and every discarded stream to the caller, because the gap between how
+often a stream fails and how often a wallet notices is the number that justifies this project.
+
+**`splice`** copies bytes both ways under two timers. **Stall** means the far side was written to and
+has answered nothing since, which the dialling half uses to close the local connection and turn a hang
+into a reconnect. **Idle** means nothing has moved at all, which the listening half uses to let go of
+streams whose dialler is gone. The transport carries no close, so these timers are the only thing that
+ends a dead conversation.
+
+## What is deliberately not here
+
+- **No retry once bytes are moving.** Resuming would mean rebuilding HTTP/2 state and replaying
+  requests already in flight, and a request delivered twice is worse than one that failed cleanly.
+- **No gRPC parsing**, and therefore no per-method routing. Which calls are worth carrying over a
+  mixnet is the wallet's decision, not this proxy's.
+- **No upstream connection until a request arrives.** A stream that was only probed never becomes a
+  connection to the node.
+
+## Design decisions
+
+| ADR | Decision |
+|---|---|
+| [0001](decisions/0001-its-own-repository.md) | Ship this as its own repository, as two binaries |
+| [0002](decisions/0002-pin-the-sdk-and-ship-a-container.md) | Pin the SDK exactly, commit the lockfile, ship a container |
+| [0003](decisions/0003-probe-every-stream-before-the-wallet-uses-it.md) | Probe every stream before the wallet is allowed near it |
+| [0004](decisions/0004-deadlines-are-the-only-close.md) | Deadlines are the only close |
+| [0005](decisions/0005-what-the-measurement-has-to-show.md) | What the measurement has to show, and how it is taken |
