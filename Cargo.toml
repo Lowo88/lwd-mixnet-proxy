@@ -39,3 +39,7 @@ path = "src/bin/client.rs"
 [[bin]]
 name = "lwd-mixnet-server"
 path = "src/bin/server.rs"
+
+[[bin]]
+name = "lwd-mixnet-bench"
+path = "src/bin/bench.rs"
