@@ -40,8 +40,22 @@ struct Arguments {
     #[arg(long, env = "LWD_MIXNET_HANDSHAKE_TIMEOUT_SECS", default_value_t = 30)]
     handshake_timeout_secs: u64,
 
-    /// How long a stream may go without moving a byte before it is let go. The transport carries no
-    /// close, so a dialler that walked away is only ever noticed by this timer.
+    /// How long a stream that introduced itself has to send a request before it is let go.
+    ///
+    /// Short on purpose, and separate from the idle deadline below. A dialler that opens several
+    /// streams at once and keeps the first to answer leaves the rest here, introduced and silent:
+    /// one measured run left 300 of them behind across 150 connections. Holding those for the idle
+    /// deadline would mean carrying two dead streams per connection for ten minutes.
+    #[arg(
+        long,
+        env = "LWD_MIXNET_FIRST_REQUEST_TIMEOUT_SECS",
+        default_value_t = 60
+    )]
+    first_request_timeout_secs: u64,
+
+    /// How long a stream carrying a connection may go without moving a byte before it is let go.
+    /// The transport carries no close, so a dialler that walked away is only ever noticed by this
+    /// timer.
     #[arg(long, env = "LWD_MIXNET_IDLE_TIMEOUT_SECS", default_value_t = 600)]
     idle_timeout_secs: u64,
 }
@@ -50,6 +64,7 @@ struct Arguments {
 struct Settings {
     upstream: String,
     handshake_timeout: Duration,
+    first_request_timeout: Duration,
     idle_timeout: Duration,
 }
 
@@ -65,6 +80,7 @@ async fn main() -> Result<()> {
     let settings = Settings {
         upstream: arguments.upstream.clone(),
         handshake_timeout: Duration::from_secs(arguments.handshake_timeout_secs),
+        first_request_timeout: Duration::from_secs(arguments.first_request_timeout_secs),
         idle_timeout: Duration::from_secs(arguments.idle_timeout_secs),
     };
 
@@ -80,6 +96,7 @@ async fn main() -> Result<()> {
         %address,
         upstream = %settings.upstream,
         handshake_timeout_secs = arguments.handshake_timeout_secs,
+        first_request_timeout_secs = arguments.first_request_timeout_secs,
         idle_timeout_secs = arguments.idle_timeout_secs,
         "accepting mixnet streams"
     );
@@ -142,10 +159,12 @@ async fn serve(mut stream: MixnetStream, settings: Settings) {
     }
 
     // The upstream is not touched until the dialler sends something to send it. A stream that was
-    // only probed, or one whose dialler discarded it, therefore never becomes a connection to the
-    // node: it waits here and is let go on the idle deadline.
+    // only probed, or one whose dialler kept a sibling instead, therefore never becomes a connection
+    // to the node: it waits here, briefly, and is let go.
     let mut opening = vec![0u8; FIRST_CHUNK];
-    let read = match tokio::time::timeout(settings.idle_timeout, stream.read(&mut opening)).await {
+    let read = match tokio::time::timeout(settings.first_request_timeout, stream.read(&mut opening))
+        .await
+    {
         Ok(Ok(0)) | Err(_) => {
             tracing::debug!(%stream_id, "letting go of a stream that carried no request");
             return;
