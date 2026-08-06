@@ -43,8 +43,9 @@ persistent, because the address is derived from keys on disk and clients have to
 That directory is private key material.
 
 **`lwd-mixnet-bench`** (`src/bin/bench.rs`) is the measurement, and it drives the same `dial` the
-client half uses rather than a copy of it. See
-[0005](decisions/0005-what-the-measurement-has-to-show.md).
+client half uses rather than a copy of it. What a run has to show is in
+[0005](decisions/0005-what-the-measurement-has-to-show.md); what the runs showed is in
+[`measurements/`](measurements/2026-08-06-probe-and-retry.md).
 
 ## The library
 
@@ -56,11 +57,13 @@ mode exactly, so it filters that failure by construction rather than by hoping. 
 mandatory even when the probe is off, because it is also how the listening half tells one of our
 streams from arbitrary mixnet traffic that would otherwise reach the upstream.
 
-**`dial`** opens streams until one answers, grouped into **rounds**. A round of one is a sequential
-retry, where each failure costs a whole deadline before the next attempt starts; a round of several
-opens them at once and takes the first to answer, turning that sum into a minimum at the cost of reply
-blocks. It returns every round and every discarded stream to the caller, because the gap between how
-often a stream fails and how often a wallet notices is the number that justifies this project.
+**`dial`** opens streams until one answers, grouped into **rounds** of three by default. A round of one
+is a sequential retry, where each failure costs a whole deadline before the next attempt starts; a
+round of several opens them at once and takes the first to answer, turning that sum into a minimum at
+the cost of reply blocks. Measured side by side, that is the difference between a 31.3 s and a 6.3 s
+p99 to establish. It returns every round and every discarded stream to the caller, because the gap
+between how often a stream fails and how often a wallet notices is the number that justifies this
+project.
 
 **`splice`** copies bytes both ways under two timers. **Stall** means the far side was written to and
 has answered nothing since, which the dialling half uses to close the local connection and turn a hang
@@ -74,8 +77,9 @@ ends a dead conversation.
   requests already in flight, and a request delivered twice is worse than one that failed cleanly.
 - **No gRPC parsing**, and therefore no per-method routing. Which calls are worth carrying over a
   mixnet is the wallet's decision, not this proxy's.
-- **No upstream connection until a request arrives.** A stream that was only probed never becomes a
-  connection to the node.
+- **No upstream connection until a request arrives.** A stream that was only probed, or one whose
+  dialler kept a sibling from the same round instead, never becomes a connection to the node, and is
+  let go under a deadline of its own.
 
 ## Design decisions
 

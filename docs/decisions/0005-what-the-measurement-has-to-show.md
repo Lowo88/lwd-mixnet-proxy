@@ -30,21 +30,26 @@ number to record alongside the result, rather than as a condition of passing, wo
 
 ## Decision
 
-**Take both headline numbers from the same attempt, and pass or fail on four conditions rather than
-one threshold.**
+**Take both headline numbers from the same attempt, and accept or reject on a set of conditions
+rather than on one threshold.**
 
 One trial is one dial with retry enabled, and it records whether the **first** stream answered, which
 is what a wallet with no probe would have seen, and whether **any** stream answered, which is what a
-wallet behind this proxy sees. They are the same sample: same second, same gateway, same conditions.
-Interleaving configurations removes the drift between blocks; this removes it entirely, because there
-is nothing to interleave.
+wallet behind this proxy sees. For this pair there is nothing to interleave: they are the same sample,
+same second, same gateway, same conditions. Comparing two configurations is a different problem, and
+is dealt with below.
 
 The benchmark is a thin binary over the same `dial` the client half calls. Measuring the production
 code path rather than a parallel implementation is the point: a rig that reimplements the retry can
 be right about a mechanism that does not ship.
 
-A run counts, and S0 passes, on all of:
+A run counts, and the design is accepted, on all of:
 
+0. **The run is clean.** No open was refused by the local client. A refused open is this machine
+   failing, reported instantly, and not the silent loss being filtered; counted together with it, a
+   degrading client reads as a degrading network whose failures have become correlated, because a
+   broken client fails every round of every trial. Any refusal invalidates the run, and a client that
+   stops opening altogether ends it rather than finishing it.
 1. **The run is powered.** At least 300 trials, with a raw failure rate of at least 10%. Below that
    there are too few raw failures for the retry to be doing anything measurable, and the result must
    be reported as unmeasured rather than as passing.
@@ -56,12 +61,25 @@ A run counts, and S0 passes, on all of:
    which asks the same thing of a good day and a bad one.
 4. **Establishment stays inside a budget a wallet tolerates.** p50 at or under 5 s and p99 at or under
    30 s, measured end to end with retries included. This condition is equal to the others, not
-   subordinate: failing it fails S0 even if 2 and 3 pass.
+   subordinate: failing it rejects the design even if 2 and 3 pass.
 
 The benchmark reports the per-round conditional rates and the spread of failures inside a round
 directly, because those two answer condition 2 from both sides: rounds are separated in time by a
 deadline, while streams inside one round are simultaneous, so comparing them separates correlation
 that decays with time from correlation that belongs to a moment.
+
+**Configurations are interleaved trial by trial, and the same-attempt argument does not extend to
+them.** Crude and visible rates come from one attempt and need no interleaving, which is the whole
+point above. Two round sizes cannot: they are separate dials, and run as separate sessions they are
+an hour apart on a transport that moves by an order of magnitude, so the difference between them is
+indistinguishable from the weather. Rotating them one per trial is therefore not an optional
+refinement but the only way the comparison means anything.
+
+**A per-stream rate is not measurable with rounds larger than one**, and the tool says so rather than
+printing a number. A round ends as soon as one stream answers, and the rest are cancelled seconds
+before their deadline would have expired, so the streams that were going to fail are dropped before
+they can. Only the round is measurable at that size, which is why the round is the unit compared
+across configurations.
 
 ## Consequences
 
@@ -78,3 +96,14 @@ that decays with time from correlation that belongs to a moment.
   trip the probe adds to establishing a connection.
 - A measured stream is never used, and the listening half connects to its upstream only when a request
   arrives, so a benchmark run never reaches the node behind it.
+
+## Outcome
+
+The run is in [`../measurements/2026-08-06-probe-and-retry.md`](../measurements/2026-08-06-probe-and-retry.md).
+The design is accepted with rounds of three: failures between rounds proved independent, a 34.67% per-stream
+failure rate reduced to nothing observable in 300 trials, and establishment held a 6.3 s p99. Retrying
+in series cleared every condition except the latency budget, at a 31.3 s p99.
+
+Conditions 0 and the interleaving requirement above were added because of that run rather than before
+it: the first attempt at measuring reported the project failing, and the second reported it succeeding,
+and neither was measuring what its headline claimed.

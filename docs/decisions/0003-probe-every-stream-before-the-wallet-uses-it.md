@@ -45,13 +45,17 @@ Three details follow from the same reasoning:
 - **The upstream is not touched until a request arrives.** A stream that was probed and then
   discarded, or probed and never used, never becomes a connection to the node.
 
-**Attempts are grouped into rounds, and a round may open more than one stream.** A failure is only
+**Attempts are grouped into rounds, and a round opens three streams by default.** A failure is only
 ever discovered when the probe deadline expires, so a round of one pays that deadline once per
-failure, in series: at a 36.5% raw rate with a 10-second deadline, establishing costs about 8 seconds
-on average and 47 in the worst case allowed by four attempts. Opening several at once turns that sum
-into a minimum. The cost is reply blocks, and that streams opened together meet the same conditions,
-so a bad moment can take a whole round. Which grouping is better is
-[measured, not assumed](0005-what-the-measurement-has-to-show.md).
+failure, in series. Opening several at once turns that sum into a minimum, at the cost of reply
+blocks and of exposing every stream in a round to the same moment.
+
+The default is three because that is what
+[measurement](../measurements/2026-08-06-probe-and-retry.md) supports. Interleaved against sequential
+retry under a 34.67% per-stream failure rate, both configurations reduced the wallet-visible failure
+rate to zero, so reliability did not separate them. Establishment did: p90 of 1.4 s and p99 of 6.3 s
+for rounds of three, against 11.4 s and 31.3 s for retrying in series, because a third of connections
+spent a full deadline waiting before their retry began.
 
 ## Consequences
 
@@ -72,3 +76,8 @@ so a bad moment can take a whole round. Which grouping is better is
   [0004](0004-deadlines-are-the-only-close.md).
 - Both the deadline and the round size are configuration, so the same build can be run as a
   sequential retry or as a hedged open. That is what makes them comparable in one measurement run.
+- **Rounds of three leave two introduced but silent streams per connection on the listening half**,
+  one measured run leaving 300 of them behind across 150 connections. They are held under their own
+  short deadline rather than the idle one that governs a connection in use, since carrying two dead
+  streams per connection for ten minutes is a cost the dialling half would be imposing on every
+  operator.
