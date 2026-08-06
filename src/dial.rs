@@ -65,7 +65,7 @@ pub struct Dialled {
 
 /// Every attempt failed.
 #[derive(Debug, thiserror::Error)]
-#[error("no stream answered after {} attempts", .rounds.iter().map(Round::opened).sum::<usize>())]
+#[error("no stream answered after {} attempts", .rounds.iter().map(Round::attempted).sum::<usize>())]
 pub struct GaveUp {
     pub rounds: Vec<Round>,
 }
@@ -73,6 +73,10 @@ pub struct GaveUp {
 /// One group of streams opened together.
 #[derive(Debug, Default)]
 pub struct Round {
+    /// Streams the SDK actually opened. Counted separately because a round stops at the first
+    /// answer, so the rest are cancelled without a verdict: they cost reply blocks and left a
+    /// stream on the far side, and only this number says how many.
+    pub opened: u32,
     /// Streams thrown away, with why and how long each took.
     pub discarded: Vec<Discarded>,
     /// Whether one of this round's streams answered.
@@ -96,9 +100,39 @@ pub enum DialError {
 }
 
 impl Round {
-    /// How many streams this round opened.
-    pub fn opened(&self) -> usize {
-        self.discarded.len() + usize::from(self.answered)
+    /// How many times this round tried to open a stream, failures to open included.
+    pub fn attempted(&self) -> usize {
+        self.opened as usize + self.failures(DialError::is_open_failure)
+    }
+
+    /// Streams that were opened and then abandoned without a verdict, because another answered
+    /// first. They are the price of opening several at once.
+    pub fn cancelled(&self) -> usize {
+        (self.opened as usize)
+            .saturating_sub(self.failures(|error| !error.is_open_failure()))
+            .saturating_sub(usize::from(self.answered))
+    }
+
+    /// Streams that were opened and whose probe went unanswered.
+    pub fn unanswered(&self) -> usize {
+        self.failures(|error| !error.is_open_failure())
+    }
+
+    fn failures(&self, matching: impl Fn(&DialError) -> bool) -> usize {
+        self.discarded
+            .iter()
+            .filter(|stream| matching(&stream.error))
+            .count()
+    }
+}
+
+impl DialError {
+    /// Whether the SDK refused to open the stream at all.
+    ///
+    /// This is a local failure, reported immediately, and not the silent loss this project exists to
+    /// filter. Counting the two together makes a degraded client look like a degraded network.
+    pub fn is_open_failure(&self) -> bool {
+        matches!(self, DialError::Open(_))
     }
 }
 
@@ -159,7 +193,10 @@ async fn run_round(
             .open_stream(server, settings.reply_surbs)
             .await
         {
-            Ok(stream) => opened.push(stream),
+            Ok(stream) => {
+                round.opened += 1;
+                opened.push(stream);
+            }
             Err(error) => round.discarded.push(Discarded {
                 elapsed: started.elapsed(),
                 error: error.into(),
@@ -238,6 +275,6 @@ impl GaveUp {
 
     /// How many streams were opened in total.
     pub fn attempts(&self) -> usize {
-        self.rounds.iter().map(Round::opened).sum()
+        self.rounds.iter().map(Round::attempted).sum()
     }
 }

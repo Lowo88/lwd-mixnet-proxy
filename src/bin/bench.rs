@@ -1,26 +1,30 @@
-//! Measures whether the probe and its retry are worth having.
+//! Measures whether the probe and its retry are worth having, and how they should be grouped.
 //!
 //! One trial is one call to the same `dial` the client half uses, against a running server half.
 //! Each trial yields both headline numbers at once, from the same sample:
 //!
-//! - the **raw** rate, whether the first stream answered, which is what a wallet would see with no
+//! - the **first-round failure rate**, how often the streams opened together all left their probes
+//!   unanswered, which with rounds of one is the raw per-stream rate a wallet would meet with no
 //!   probe at all;
-//! - the **wallet-visible** rate, whether any of them answered, which is what a wallet behind this
-//!   proxy sees.
+//! - the **wallet-visible** rate, how often no stream in a trial answered at all.
 //!
-//! Taking them from the same attempt rather than from alternating runs is what makes the comparison
-//! survive the transport: its failure rate moved by an order of magnitude between sessions, which is
-//! larger than any effect being measured here.
+//! **Round sizes are interleaved trial by trial**, never run as separate sessions. The transport's
+//! failure rate moved by an order of magnitude between one hour and the next, which is larger than
+//! any effect being compared here, so two configurations measured an hour apart cannot be told apart
+//! from the weather. Comparing crude and visible rates does not need this, because they come from
+//! one attempt; comparing round sizes does, because they cannot.
 //!
-//! Two things below the headline decide more than the headline does:
+//! Two limits are worth knowing before reading a report:
 //!
-//! - **Whether failures are independent.** Retrying multiplies only if they are. The per-round
-//!   conditional rates answer this directly: if a second round fails as often as a first, retry
-//!   scales and the required attempt count can be computed for any raw rate. If it fails more, no
-//!   number of attempts is enough, and the headline rate of one good afternoon says nothing.
-//! - **What establishing costs.** A failure is silent and therefore only discovered when the probe
-//!   deadline expires, so retries buy reliability with seconds. A configuration can clear any
-//!   failure-rate bar and still be one no wallet would tolerate.
+//! - **A per-stream rate is not measurable with rounds larger than one.** A round ends as soon as one
+//!   stream answers, and the rest are cancelled seconds before their deadline would have expired, so
+//!   the streams that were going to fail are dropped before they can. Only the round is measurable,
+//!   which is why the round is what gets compared.
+//! - **A stream the SDK refused to open is not a failure of the transport** and is counted apart. The
+//!   local client was seen to degrade until it refused every open, and folding that in reads as the
+//!   network failing and as failures becoming correlated, because a broken client fails every round
+//!   of every trial. Any refusal marks the run invalid, and a client that stops opening altogether
+//!   ends it.
 
 use std::collections::BTreeMap;
 use std::num::NonZeroU32;
@@ -33,6 +37,10 @@ use lwd_mixnet_proxy::dial::{self, DialSettings, ProbeSettings, Round};
 use nym_sdk::mixnet::{MixnetClient, Recipient};
 use tokio::sync::Mutex;
 use tokio::time::Instant;
+
+/// Consecutive trials that open nothing before the run is abandoned. Enough to rule out a blip,
+/// short enough not to spend the session on a dead client.
+const REFUSAL_STREAK_LIMIT: usize = 5;
 
 #[derive(Parser)]
 #[command(
@@ -49,14 +57,13 @@ struct Arguments {
     trials: usize,
 
     /// Streams one trial may open in total.
-    #[arg(long, default_value = "4")]
+    #[arg(long, default_value = "6")]
     attempts: NonZeroU32,
 
-    /// Streams opened at once. One measures sequential retry, where each failure costs a full
-    /// timeout; more measures whether opening several at once buys latency without losing
-    /// independence.
-    #[arg(long, default_value = "1")]
-    concurrency: NonZeroU32,
+    /// Round sizes to compare, rotated one per trial. A single value measures one configuration;
+    /// several interleave them, which is the only way to compare them on a transport that drifts.
+    #[arg(long, value_delimiter = ',', default_value = "1,3")]
+    concurrency: Vec<NonZeroU32>,
 
     #[arg(long, default_value_t = 10)]
     probe_timeout_secs: u64,
@@ -66,6 +73,8 @@ struct Arguments {
 }
 
 struct Trial {
+    /// Round size this trial was dialled with.
+    concurrency: u32,
     rounds: Vec<Round>,
     /// How long the whole trial took, retries included. This is what a wallet waits.
     total: Duration,
@@ -74,15 +83,32 @@ struct Trial {
 }
 
 impl Trial {
-    /// Whether the very first stream opened answered, which is the raw transport rate.
-    fn first_stream_answered(&self) -> bool {
-        self.rounds
-            .first()
-            .is_some_and(|round| round.answered && round.discarded.is_empty())
-    }
-
     fn answered(&self) -> bool {
         self.established.is_some()
+    }
+
+    /// Whether the streams opened together at the start all went unanswered.
+    ///
+    /// This is the comparable unit across round sizes: with rounds of one it is the raw per-stream
+    /// rate, and with larger rounds it is how often a whole group came up empty.
+    fn first_round_failed(&self) -> bool {
+        self.rounds.first().is_some_and(|round| !round.answered)
+    }
+
+    fn opened(&self) -> usize {
+        self.rounds.iter().map(|round| round.opened as usize).sum()
+    }
+
+    fn refused_opens(&self) -> usize {
+        self.rounds.iter().map(Round::attempted).sum::<usize>() - self.opened()
+    }
+
+    fn unanswered(&self) -> usize {
+        self.rounds.iter().map(Round::unanswered).sum()
+    }
+
+    fn cancelled(&self) -> usize {
+        self.rounds.iter().map(Round::cancelled).sum()
     }
 }
 
@@ -99,14 +125,6 @@ async fn main() -> Result<()> {
         .server
         .parse()
         .context("parsing the server's Nym address")?;
-    let settings = DialSettings {
-        reply_surbs: arguments.reply_surbs,
-        probe: Some(ProbeSettings {
-            timeout: Duration::from_secs(arguments.probe_timeout_secs),
-            attempts: arguments.attempts,
-            concurrency: arguments.concurrency,
-        }),
-    };
 
     let client = MixnetClient::connect_new()
         .await
@@ -115,10 +133,15 @@ async fn main() -> Result<()> {
 
     println!("dialling {server}");
     println!(
-        "trials {} | attempts {} | {} at a time | probe timeout {}s | reply blocks {}\n",
+        "trials {} | attempts {} | round sizes {} interleaved | probe timeout {}s | reply blocks {}\n",
         arguments.trials,
         arguments.attempts,
-        arguments.concurrency,
+        arguments
+            .concurrency
+            .iter()
+            .map(|size| size.to_string())
+            .collect::<Vec<_>>()
+            .join(","),
         arguments.probe_timeout_secs,
         arguments
             .reply_surbs
@@ -126,27 +149,56 @@ async fn main() -> Result<()> {
     );
 
     let mut trials = Vec::with_capacity(arguments.trials);
+    let mut refusing_streak = 0usize;
+
     for number in 1..=arguments.trials {
-        let trial = run_trial(&client, server, settings).await;
+        let concurrency = arguments.concurrency[(number - 1) % arguments.concurrency.len()];
+        let settings = DialSettings {
+            reply_surbs: arguments.reply_surbs,
+            probe: Some(ProbeSettings {
+                timeout: Duration::from_secs(arguments.probe_timeout_secs),
+                attempts: arguments.attempts,
+                concurrency,
+            }),
+        };
+
+        let trial = run_trial(&client, server, settings, concurrency.get()).await;
+        // Single-word outcomes: a space here would shift every column after it for whoever parses
+        // this later.
         println!(
-            "{number:>5}  {:<9} {:>2} rounds  {:>2} discarded  {:>6} ms",
+            "{number:>5}  r{:<2} {:<8} {:>2} rounds  {:>2} unanswered  {:>2} refused  {:>6} ms",
+            trial.concurrency,
             if trial.answered() {
                 "answered"
             } else {
-                "GAVE UP"
+                "gave-up"
             },
             trial.rounds.len(),
-            trial
-                .rounds
-                .iter()
-                .map(|round| round.discarded.len())
-                .sum::<usize>(),
+            trial.unanswered(),
+            trial.refused_opens(),
             trial.total.as_millis(),
         );
+
+        // A client whose gateway has gone stops opening streams at all, and everything measured
+        // after that is the client rather than the transport. Stopping beats spending an hour
+        // collecting numbers that have to be thrown away.
+        refusing_streak = if trial.opened() == 0 {
+            refusing_streak + 1
+        } else {
+            0
+        };
         trials.push(trial);
+
+        if refusing_streak >= REFUSAL_STREAK_LIMIT {
+            println!(
+                "\nSTOPPING after {number} trials: the last {refusing_streak} opened no stream at all. \
+                 The local client is no longer able to send, so nothing further would measure the transport."
+            );
+            break;
+        }
     }
 
-    report(&trials, arguments.probe_timeout_secs);
+    report(&trials, &arguments);
     Ok(())
 }
 
@@ -154,17 +206,20 @@ async fn run_trial(
     client: &Mutex<MixnetClient>,
     server: Recipient,
     settings: DialSettings,
+    concurrency: u32,
 ) -> Trial {
     let started = Instant::now();
     match dial::dial(client, server, settings).await {
         // The stream is dropped rather than used: the server half connects to its upstream only
         // once a request arrives, so a measured stream never reaches the node.
         Ok(dialled) => Trial {
+            concurrency,
             rounds: dialled.rounds,
             total: started.elapsed(),
             established: Some(dialled.elapsed),
         },
         Err(gave_up) => Trial {
+            concurrency,
             rounds: gave_up.rounds,
             total: started.elapsed(),
             established: None,
@@ -172,82 +227,216 @@ async fn run_trial(
     }
 }
 
-fn report(trials: &[Trial], probe_timeout_secs: u64) {
-    let total = trials.len();
-    let raw_failures = trials
-        .iter()
-        .filter(|trial| !trial.first_stream_answered())
-        .count();
-    let visible_failures = trials.iter().filter(|trial| !trial.answered()).count();
-    let streams: usize = trials
-        .iter()
-        .flat_map(|trial| trial.rounds.iter())
-        .map(Round::opened)
-        .sum();
+fn report(trials: &[Trial], arguments: &Arguments) {
+    let refused: usize = trials.iter().map(Trial::refused_opens).sum();
+    if refused > 0 {
+        println!(
+            "\nINVALID: {refused} opens were refused by the local client, which is a failure of this \
+             machine rather than of the transport.\nEvery number below mixes the two. Restart the \
+             client and measure again."
+        );
+    }
 
-    let raw_rate = ratio(raw_failures, total);
+    let arms: Vec<(u32, Vec<&Trial>)> = arguments
+        .concurrency
+        .iter()
+        .map(|size| {
+            let size = size.get();
+            (
+                size,
+                trials
+                    .iter()
+                    .filter(|trial| trial.concurrency == size)
+                    .collect(),
+            )
+        })
+        .collect();
+
+    for (size, arm) in &arms {
+        report_arm(*size, arm, arguments.probe_timeout_secs);
+    }
+    if arms.len() > 1 {
+        compare(&arms);
+    }
+}
+
+fn report_arm(size: u32, arm: &[&Trial], probe_timeout_secs: u64) {
+    let total = arm.len();
+    if total == 0 {
+        return;
+    }
+    let first_round_failures = arm
+        .iter()
+        .filter(|trial| trial.first_round_failed())
+        .count();
+    let visible_failures = arm.iter().filter(|trial| !trial.answered()).count();
+    let opened: usize = arm.iter().map(|trial| trial.opened()).sum();
+    let cancelled: usize = arm.iter().map(|trial| trial.cancelled()).sum();
+
+    let first_round_rate = ratio(first_round_failures, total);
     let visible_rate = ratio(visible_failures, total);
 
-    println!("\n--- headline ---");
+    println!(
+        "\n=== rounds of {size} ({}) ===",
+        if size == 1 {
+            "sequential retry"
+        } else {
+            "opened together"
+        }
+    );
     println!("trials                       {total}");
     println!(
-        "raw failure rate             {:>6.2}%  ({raw_failures}/{total})   the first stream did not answer",
-        100.0 * raw_rate
+        "first-round failure rate     {:>6.2}%  ({first_round_failures}/{total})   {}",
+        100.0 * first_round_rate,
+        if size == 1 {
+            "the stream's probe went unanswered"
+        } else {
+            "no stream of the round answered"
+        }
     );
     println!(
-        "wallet-visible failure rate  {:>6.2}%  ({visible_failures}/{total})   no stream answered",
+        "wallet-visible failure rate  {:>6.2}%  ({visible_failures}/{total})   no stream answered at all",
         100.0 * visible_rate
     );
-    println!("streams opened               {streams}");
+    println!(
+        "streams opened               {opened}   ({:.1} per trial, {cancelled} cancelled once another answered)",
+        opened as f64 / total as f64
+    );
     if visible_rate > 0.0 {
         println!(
             "reduction factor             {:>6.1}x",
-            raw_rate / visible_rate
+            first_round_rate / visible_rate
         );
-    } else if raw_failures > 0 {
-        println!("reduction factor             >{total}x  (no visible failure in this run)");
+    } else if first_round_failures > 0 {
+        println!("reduction factor             >{total}x  (no visible failure in this arm)");
     }
-
-    if raw_failures * 10 < total {
+    if size > 1 {
         println!(
-            "\nNOTE: a raw rate this low cannot separate the design from a quiet afternoon. \
-             Treat the reduction above as unmeasured, not as passing."
+            "per-stream rate              not measurable with rounds of {size}: the losers are \
+             cancelled seconds before their deadline"
         );
     }
-
-    conditional_rates(trials);
-    within_round(trials);
-    latency(trials, probe_timeout_secs);
-
-    if raw_rate > 0.0 && raw_rate < 1.0 {
-        // Only meaningful if the conditional rates above show independence; printed alongside them
-        // so the two are read together.
-        let needed = (0.01f64.ln() / raw_rate.ln()).ceil() as u32;
+    if first_round_failures * 10 < total {
         println!(
-            "\nAt this raw rate, reaching 1% would take {needed} attempts if failures were independent."
+            "\nNOTE: a rate this low cannot separate the design from a quiet afternoon. \
+             Treat any reduction above as unmeasured, not as passing."
         );
     }
+
+    conditional_rates(arm);
+    within_round(arm);
+    latency(arm, probe_timeout_secs);
+}
+
+/// Put the arms side by side, and check the assumption that makes larger rounds worth opening.
+fn compare(arms: &[(u32, Vec<&Trial>)]) {
+    println!("\n=== comparison, interleaved in the same window ===");
+    print!("{:32}", "");
+    for (size, _) in arms {
+        print!("{:>14}", format!("rounds of {size}"));
+    }
+    println!();
+
+    let row = |label: &str, value: &dyn Fn(&[&Trial]) -> String| {
+        print!("{label:32}");
+        for (_, arm) in arms {
+            print!("{:>14}", value(arm));
+        }
+        println!();
+    };
+
+    row("first-round failure rate", &|arm| {
+        format!(
+            "{:.2}%",
+            100.0
+                * ratio(
+                    arm.iter().filter(|t| t.first_round_failed()).count(),
+                    arm.len()
+                )
+        )
+    });
+    row("wallet-visible failure rate", &|arm| {
+        format!(
+            "{:.2}%",
+            100.0 * ratio(arm.iter().filter(|t| !t.answered()).count(), arm.len())
+        )
+    });
+    row("establishment p50", &|arm| {
+        format!("{} ms", percentile(&establishment(arm), 0.50))
+    });
+    row("establishment p99", &|arm| {
+        format!("{} ms", percentile(&establishment(arm), 0.99))
+    });
+    row("streams opened per trial", &|arm| {
+        format!(
+            "{:.1}",
+            arm.iter().map(|t| t.opened()).sum::<usize>() as f64 / arm.len().max(1) as f64
+        )
+    });
+
+    // With rounds of one measuring the per-stream rate, every larger round has a prediction to meet:
+    // if simultaneous streams fail independently, a round of N fails at the per-stream rate to the
+    // Nth. Observing far worse means the failure belongs to the moment rather than to the stream,
+    // and opening more at once buys less than the arithmetic suggests.
+    let Some((_, sequential)) = arms.iter().find(|(size, _)| *size == 1) else {
+        return;
+    };
+    let per_stream = ratio(
+        sequential.iter().filter(|t| t.first_round_failed()).count(),
+        sequential.len(),
+    );
+    if per_stream == 0.0 {
+        return;
+    }
+
+    println!("\nAre simultaneous streams independent?");
+    println!(
+        "  per-stream failure rate, from rounds of 1   {:>7.2}%",
+        100.0 * per_stream
+    );
+    for (size, arm) in arms.iter().filter(|(size, _)| *size > 1) {
+        let predicted = per_stream.powi(*size as i32);
+        let observed = ratio(
+            arm.iter().filter(|t| t.first_round_failed()).count(),
+            arm.len(),
+        );
+        println!(
+            "  a round of {size} should then fail            {:>7.2}%,  observed {:>6.2}%",
+            100.0 * predicted,
+            100.0 * observed
+        );
+    }
+}
+
+fn establishment(arm: &[&Trial]) -> Vec<u128> {
+    arm.iter()
+        .filter(|trial| trial.answered())
+        .map(|trial| trial.total.as_millis())
+        .collect()
 }
 
 /// How often round *j* failed, given that every round before it did.
 ///
 /// Equal rates down the column mean failures are independent and retrying multiplies. A rising
 /// column means a failure predicts the next one, and the arithmetic behind retrying does not hold.
-fn conditional_rates(trials: &[Trial]) {
-    println!("\n--- failure rate per round, conditional on every earlier round failing ---");
-    println!("round  reached  failed    rate");
-
-    let deepest = trials
+fn conditional_rates(arm: &[&Trial]) {
+    let deepest = arm
         .iter()
         .map(|trial| trial.rounds.len())
         .max()
         .unwrap_or(0);
+    if deepest < 2 {
+        return;
+    }
+
+    println!("\nfailure rate per round, conditional on every earlier round failing");
+    println!("round  reached  failed    rate");
     for index in 0..deepest {
-        let reached = trials
+        let reached = arm
             .iter()
             .filter(|trial| trial.rounds.len() > index)
             .count();
-        let failed = trials
+        let failed = arm
             .iter()
             .filter_map(|trial| trial.rounds.get(index))
             .filter(|round| !round.answered)
@@ -260,17 +449,13 @@ fn conditional_rates(trials: &[Trial]) {
     }
 }
 
-/// How many streams failed inside one round, when a round opened more than one.
-///
-/// Streams opened together meet the same conditions, so this is the other half of the independence
-/// question: whole rounds failing far more often than independent draws predict means the failure
-/// belongs to a moment rather than to a stream.
-fn within_round(trials: &[Trial]) {
-    let mut spread: BTreeMap<(usize, usize), usize> = BTreeMap::new();
-    for round in trials.iter().flat_map(|trial| trial.rounds.iter()) {
-        if round.opened() > 1 {
+/// How many streams went unanswered inside one round, when a round opened more than one.
+fn within_round(arm: &[&Trial]) {
+    let mut spread: BTreeMap<(u32, usize), usize> = BTreeMap::new();
+    for round in arm.iter().flat_map(|trial| trial.rounds.iter()) {
+        if round.attempted() > 1 {
             *spread
-                .entry((round.opened(), round.discarded.len()))
+                .entry((round.opened, round.unanswered()))
                 .or_default() += 1;
         }
     }
@@ -278,38 +463,33 @@ fn within_round(trials: &[Trial]) {
         return;
     }
 
-    println!("\n--- streams that failed inside one round ---");
-    println!("opened  failed  rounds");
-    for ((opened, failed), count) in spread {
-        println!("{opened:>6}  {failed:>6}  {count:>6}");
+    println!("\nstreams that went unanswered inside one round");
+    println!("opened  unanswered  rounds");
+    for ((opened, unanswered), count) in spread {
+        println!("{opened:>6}  {unanswered:>10}  {count:>6}");
     }
 }
 
-fn latency(trials: &[Trial], probe_timeout_secs: u64) {
-    let answering: Vec<u128> = trials
+fn latency(arm: &[&Trial], probe_timeout_secs: u64) {
+    let answering: Vec<u128> = arm
         .iter()
         .filter_map(|trial| trial.established)
         .map(|elapsed| elapsed.as_millis())
         .collect();
-    let visible: Vec<u128> = trials
-        .iter()
-        .filter(|trial| trial.answered())
-        .map(|trial| trial.total.as_millis())
-        .collect();
-    let discarded: Vec<u128> = trials
+    let discarded: Vec<u128> = arm
         .iter()
         .flat_map(|trial| trial.rounds.iter())
         .flat_map(|round| round.discarded.iter())
         .map(|stream| stream.elapsed.as_millis())
         .collect();
 
-    println!("\n--- latency ---");
+    println!("\nlatency");
     print_percentiles("round that answered              ", &answering);
-    print_percentiles("establishment seen by the wallet ", &visible);
+    print_percentiles("establishment seen by the wallet ", &establishment(arm));
     print_percentiles("time spent on a discarded stream ", &discarded);
     println!(
-        "\nA discarded stream costs the whole probe timeout ({probe_timeout_secs}s), because the \
-         failure is silent.\nThe second row is what a wallet waits before its first byte moves."
+        "a discarded stream costs the whole probe timeout ({probe_timeout_secs}s), because the \
+         failure is silent"
     );
 }
 
@@ -318,18 +498,22 @@ fn print_percentiles(label: &str, samples: &[u128]) {
         println!("{label}  no samples");
         return;
     }
-    let mut sorted = samples.to_vec();
-    sorted.sort_unstable();
-    let at = |fraction: f64| -> u128 {
-        sorted[(((sorted.len() - 1) as f64) * fraction).round() as usize]
-    };
     println!(
         "{label}  p50 {:>6} ms | p90 {:>6} ms | p99 {:>6} ms | max {:>6} ms",
-        at(0.50),
-        at(0.90),
-        at(0.99),
-        sorted[sorted.len() - 1]
+        percentile(samples, 0.50),
+        percentile(samples, 0.90),
+        percentile(samples, 0.99),
+        percentile(samples, 1.0),
     );
+}
+
+fn percentile(samples: &[u128], fraction: f64) -> u128 {
+    if samples.is_empty() {
+        return 0;
+    }
+    let mut sorted = samples.to_vec();
+    sorted.sort_unstable();
+    sorted[(((sorted.len() - 1) as f64) * fraction).round() as usize]
 }
 
 fn ratio(part: usize, whole: usize) -> f64 {
