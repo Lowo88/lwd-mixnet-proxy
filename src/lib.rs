@@ -7,3 +7,4 @@
 //! ```
 
 pub mod handshake;
+pub mod splice;
