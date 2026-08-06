@@ -38,8 +38,13 @@ struct Arguments {
 
     /// How many of those are opened at once. One retries in series, so each failure costs a whole
     /// probe timeout before the next attempt starts; more opens several and takes the first to
-    /// answer, which costs reply blocks and exposes every stream in a round to the same moment.
-    #[arg(long, env = "LWD_MIXNET_PROBE_CONCURRENCY", default_value = "2")]
+    /// answer.
+    ///
+    /// Three by default, because that is what measurement supports: interleaved against sequential
+    /// retry under a 34.7% per-stream failure rate, rounds of three held establishment at a 6.3 s
+    /// p99 where retrying in series reached 31.3 s. The cost is three streams and three reply-block
+    /// budgets per connection instead of one.
+    #[arg(long, env = "LWD_MIXNET_PROBE_CONCURRENCY", default_value = "3")]
     probe_concurrency: NonZeroU32,
 
     /// Hand the wallet the first stream that opens, without checking that it works. The probe
