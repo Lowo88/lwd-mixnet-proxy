@@ -1,0 +1,36 @@
+# Two containers, one per half. The dialling half needs an address the serving half only knows once
+# it is running, so the order matters: start `server`, read the NYM_ADDRESS it prints, export it,
+# start `client`. See README.md.
+name: lwd-mixnet-proxy
+
+services:
+  server:
+    build: .
+    command: ["lwd-mixnet-server"]
+    environment:
+      # The upstream runs on the host, not in this network.
+      LWD_MIXNET_UPSTREAM: "host.docker.internal:9067"
+      LWD_MIXNET_STATE_DIR: "/state"
+      RUST_LOG: "${RUST_LOG:-info}"
+    volumes:
+      # Holds the client identity, which is a private key directory: lose it and the address
+      # changes, copy it and this half can be impersonated.
+      - server-state:/state
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  client:
+    build: .
+    command: ["lwd-mixnet-client"]
+    environment:
+      # Left empty rather than made mandatory here, so `docker compose build` works before the
+      # serving half has ever run and printed an address.
+      LWD_MIXNET_SERVER: "${SERVER_ADDRESS:-}"
+      LWD_MIXNET_BIND: "0.0.0.0:9068"
+      RUST_LOG: "${RUST_LOG:-info}"
+    ports:
+      # Bound to loopback on the host: this port is an unauthenticated door to the upstream.
+      - "127.0.0.1:${CLIENT_HOST_PORT:-9068}:9068"
+
+volumes:
+  server-state:

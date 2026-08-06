@@ -1,0 +1,9 @@
+/target
+/state
+.DS_Store
+
+# Secrets and local artifacts — defense in depth; never commit these.
+*.pem
+*.key
+.env
+.env.*
