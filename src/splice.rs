@@ -104,6 +104,9 @@ where
 
 impl Watchdog {
     fn tripped(&self, activity: &Activity, started: Instant) -> Option<Ended> {
+        // Read before the timestamps, so bytes landing in between make the subtractions below
+        // saturate to zero rather than wrap: a deadline that has not been reached must never look
+        // like one that has.
         let now = millis_since(started);
         let wrote = activity.to_remote.moved_at();
         let heard = activity.from_remote.moved_at();
@@ -112,13 +115,14 @@ impl Watchdog {
         if let Some(stall) = self.stall
             && let Some(wrote) = wrote
             && heard.is_none_or(|heard| heard < wrote)
-            && now - wrote >= as_millis(stall)
+            && now.saturating_sub(wrote) >= as_millis(stall)
         {
             return Some(Ended::Stalled(stall));
         }
         // Nothing having moved at all counts from the beginning of the splice.
         if let Some(idle) = self.idle
-            && now - wrote.into_iter().chain(heard).max().unwrap_or(0) >= as_millis(idle)
+            && now.saturating_sub(wrote.into_iter().chain(heard).max().unwrap_or(0))
+                >= as_millis(idle)
         {
             return Some(Ended::Idle(idle));
         }
@@ -356,5 +360,23 @@ mod tests {
     #[test]
     fn a_watchdog_with_no_deadline_still_ticks() {
         assert!(Watchdog::default().check_period() > IMMEDIATE);
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn bytes_landing_while_the_watchdog_reads_the_clock_do_not_trip_it() {
+        let started = Instant::now();
+        let activity = Activity::default();
+        // What a `record()` between reading the clock and loading the timestamps leaves behind: a
+        // stamp ahead of the watchdog's own `now`.
+        activity
+            .to_remote
+            .record(1, started - Duration::from_secs(1));
+
+        let watchdog = Watchdog {
+            stall: Some(Duration::from_secs(30)),
+            idle: Some(Duration::from_secs(600)),
+        };
+
+        assert!(watchdog.tripped(&activity, started).is_none());
     }
 }
