@@ -1,0 +1,362 @@
+dialling server-B
+trials 300 | attempts 6 | round sizes 1,3 interleaved | probe timeout 10s | reply blocks SDK default
+
+    1  r1  answered  2 rounds   1 unanswered   0 refused   11109 ms
+    2  r3  answered  1 rounds   0 unanswered   0 refused    1213 ms
+    3  r1  answered  1 rounds   0 unanswered   0 refused    1460 ms
+    4  r3  answered  1 rounds   0 unanswered   0 refused    1419 ms
+    5  r1  answered  2 rounds   1 unanswered   0 refused   11363 ms
+    6  r3  answered  1 rounds   0 unanswered   0 refused    1362 ms
+    7  r1  answered  1 rounds   0 unanswered   0 refused    1151 ms
+    8  r3  answered  1 rounds   0 unanswered   0 refused    1317 ms
+    9  r1  answered  1 rounds   0 unanswered   0 refused    1225 ms
+   10  r3  answered  1 rounds   0 unanswered   0 refused    1247 ms
+   11  r1  answered  2 rounds   1 unanswered   0 refused   11387 ms
+   12  r3  answered  1 rounds   0 unanswered   0 refused    1064 ms
+   13  r1  answered  2 rounds   1 unanswered   0 refused   11729 ms
+   14  r3  answered  1 rounds   0 unanswered   0 refused    1561 ms
+   15  r1  answered  1 rounds   0 unanswered   0 refused    1151 ms
+   16  r3  answered  1 rounds   0 unanswered   0 refused    1364 ms
+   17  r1  answered  2 rounds   1 unanswered   0 refused   13403 ms
+   18  r3  answered  1 rounds   0 unanswered   0 refused    1391 ms
+   19  r1  answered  1 rounds   0 unanswered   0 refused    1278 ms
+   20  r3  answered  1 rounds   0 unanswered   0 refused    1323 ms
+   21  r1  answered  1 rounds   0 unanswered   0 refused    1164 ms
+   22  r3  answered  1 rounds   0 unanswered   0 refused    1369 ms
+   23  r1  answered  1 rounds   0 unanswered   0 refused    1187 ms
+   24  r3  answered  1 rounds   0 unanswered   0 refused    1394 ms
+   25  r1  answered  2 rounds   1 unanswered   0 refused   11350 ms
+   26  r3  answered  1 rounds   0 unanswered   0 refused    1238 ms
+   27  r1  answered  1 rounds   0 unanswered   0 refused    1362 ms
+   28  r3  answered  1 rounds   0 unanswered   0 refused    1171 ms
+   29  r1  answered  1 rounds   0 unanswered   0 refused    1141 ms
+   30  r3  answered  1 rounds   0 unanswered   0 refused    1217 ms
+   31  r1  answered  2 rounds   1 unanswered   0 refused   11403 ms
+   32  r3  answered  1 rounds   0 unanswered   0 refused    1395 ms
+   33  r1  answered  1 rounds   0 unanswered   0 refused    1100 ms
+   34  r3  answered  1 rounds   0 unanswered   0 refused    1037 ms
+   35  r1  answered  2 rounds   1 unanswered   0 refused   11164 ms
+   36  r3  answered  1 rounds   0 unanswered   0 refused    1372 ms
+   37  r1  answered  1 rounds   0 unanswered   0 refused    1242 ms
+   38  r3  answered  1 rounds   0 unanswered   0 refused    1421 ms
+   39  r1  answered  1 rounds   0 unanswered   0 refused    1121 ms
+   40  r3  answered  1 rounds   0 unanswered   0 refused    1181 ms
+   41  r1  answered  1 rounds   0 unanswered   0 refused    1095 ms
+   42  r3  answered  1 rounds   0 unanswered   0 refused    1255 ms
+   43  r1  answered  1 rounds   0 unanswered   0 refused    1222 ms
+   44  r3  answered  1 rounds   0 unanswered   0 refused    1023 ms
+   45  r1  answered  1 rounds   0 unanswered   0 refused    1262 ms
+   46  r3  answered  2 rounds   3 unanswered   0 refused   11159 ms
+   47  r1  answered  1 rounds   0 unanswered   0 refused    1127 ms
+   48  r3  answered  1 rounds   0 unanswered   0 refused    1258 ms
+   49  r1  answered  2 rounds   1 unanswered   0 refused   11336 ms
+   50  r3  answered  1 rounds   0 unanswered   0 refused    1292 ms
+   51  r1  answered  1 rounds   0 unanswered   0 refused    1152 ms
+   52  r3  answered  1 rounds   0 unanswered   0 refused    1220 ms
+   53  r1  answered  1 rounds   0 unanswered   0 refused    1011 ms
+   54  r3  answered  1 rounds   0 unanswered   0 refused    1216 ms
+   55  r1  answered  1 rounds   0 unanswered   0 refused    1077 ms
+   56  r3  answered  1 rounds   0 unanswered   0 refused    1084 ms
+   57  r1  answered  2 rounds   1 unanswered   0 refused   11166 ms
+   58  r3  answered  1 rounds   0 unanswered   0 refused    1216 ms
+   59  r1  answered  2 rounds   1 unanswered   0 refused   11256 ms
+   60  r3  answered  1 rounds   0 unanswered   0 refused    1301 ms
+   61  r1  answered  2 rounds   1 unanswered   0 refused   11031 ms
+   62  r3  answered  1 rounds   0 unanswered   0 refused    1197 ms
+   63  r1  answered  2 rounds   1 unanswered   0 refused   11526 ms
+   64  r3  answered  1 rounds   0 unanswered   0 refused    1221 ms
+   65  r1  answered  2 rounds   1 unanswered   0 refused   11173 ms
+   66  r3  answered  1 rounds   0 unanswered   0 refused    1170 ms
+   67  r1  answered  1 rounds   0 unanswered   0 refused    1814 ms
+   68  r3  answered  1 rounds   0 unanswered   0 refused    1263 ms
+   69  r1  answered  2 rounds   1 unanswered   0 refused   11205 ms
+   70  r3  answered  1 rounds   0 unanswered   0 refused    1352 ms
+   71  r1  answered  1 rounds   0 unanswered   0 refused    1400 ms
+   72  r3  answered  1 rounds   0 unanswered   0 refused    1325 ms
+   73  r1  answered  1 rounds   0 unanswered   0 refused     961 ms
+   74  r3  answered  1 rounds   0 unanswered   0 refused     955 ms
+   75  r1  answered  1 rounds   0 unanswered   0 refused    1155 ms
+   76  r3  answered  1 rounds   0 unanswered   0 refused    1161 ms
+   77  r1  answered  1 rounds   0 unanswered   0 refused    1525 ms
+   78  r3  answered  1 rounds   0 unanswered   0 refused    1100 ms
+   79  r1  answered  1 rounds   0 unanswered   0 refused    1572 ms
+   80  r3  answered  1 rounds   0 unanswered   0 refused    1147 ms
+   81  r1  answered  2 rounds   1 unanswered   0 refused   11228 ms
+   82  r3  answered  1 rounds   0 unanswered   0 refused    1458 ms
+   83  r1  answered  1 rounds   0 unanswered   0 refused    1307 ms
+   84  r3  answered  1 rounds   0 unanswered   0 refused    1199 ms
+   85  r1  answered  2 rounds   1 unanswered   0 refused   11093 ms
+   86  r3  answered  1 rounds   0 unanswered   0 refused    1220 ms
+   87  r1  answered  2 rounds   1 unanswered   0 refused   11023 ms
+   88  r3  answered  1 rounds   0 unanswered   0 refused    1124 ms
+   89  r1  answered  3 rounds   2 unanswered   0 refused   21057 ms
+   90  r3  answered  1 rounds   0 unanswered   0 refused    1137 ms
+   91  r1  answered  1 rounds   0 unanswered   0 refused    1364 ms
+   92  r3  answered  1 rounds   0 unanswered   0 refused    1172 ms
+   93  r1  answered  2 rounds   1 unanswered   0 refused   11160 ms
+   94  r3  answered  1 rounds   0 unanswered   0 refused    1217 ms
+   95  r1  answered  1 rounds   0 unanswered   0 refused    1209 ms
+   96  r3  answered  1 rounds   0 unanswered   0 refused    1329 ms
+   97  r1  answered  1 rounds   0 unanswered   0 refused     962 ms
+   98  r3  answered  1 rounds   0 unanswered   0 refused    1332 ms
+   99  r1  answered  1 rounds   0 unanswered   0 refused    1357 ms
+  100  r3  answered  1 rounds   0 unanswered   0 refused    1294 ms
+  101  r1  answered  2 rounds   1 unanswered   0 refused   11212 ms
+  102  r3  answered  1 rounds   0 unanswered   0 refused    1125 ms
+  103  r1  answered  1 rounds   0 unanswered   0 refused    1527 ms
+  104  r3  answered  1 rounds   0 unanswered   0 refused    1349 ms
+  105  r1  answered  1 rounds   0 unanswered   0 refused    1328 ms
+  106  r3  answered  1 rounds   0 unanswered   0 refused    1120 ms
+  107  r1  answered  1 rounds   0 unanswered   0 refused    1241 ms
+  108  r3  answered  1 rounds   0 unanswered   0 refused    1384 ms
+  109  r1  answered  1 rounds   0 unanswered   0 refused    1067 ms
+  110  r3  answered  1 rounds   0 unanswered   0 refused    2163 ms
+  111  r1  answered  1 rounds   0 unanswered   0 refused    2422 ms
+  112  r3  answered  1 rounds   0 unanswered   0 refused    6340 ms
+  113  r1  answered  1 rounds   0 unanswered   0 refused    1577 ms
+  114  r3  answered  1 rounds   0 unanswered   0 refused    1257 ms
+  115  r1  answered  1 rounds   0 unanswered   0 refused    1308 ms
+  116  r3  answered  1 rounds   0 unanswered   0 refused    1143 ms
+  117  r1  answered  2 rounds   1 unanswered   0 refused   10894 ms
+  118  r3  answered  1 rounds   0 unanswered   0 refused    1145 ms
+  119  r1  answered  1 rounds   0 unanswered   0 refused    1304 ms
+  120  r3  answered  1 rounds   0 unanswered   0 refused    1134 ms
+  121  r1  answered  1 rounds   0 unanswered   0 refused    2734 ms
+  122  r3  answered  1 rounds   0 unanswered   0 refused    1106 ms
+  123  r1  answered  1 rounds   0 unanswered   0 refused    2699 ms
+  124  r3  answered  1 rounds   0 unanswered   0 refused    1091 ms
+  125  r1  answered  1 rounds   0 unanswered   0 refused    2728 ms
+  126  r3  answered  1 rounds   0 unanswered   0 refused    1237 ms
+  127  r1  answered  2 rounds   1 unanswered   0 refused   11314 ms
+  128  r3  answered  1 rounds   0 unanswered   0 refused    1312 ms
+  129  r1  answered  2 rounds   1 unanswered   0 refused   10936 ms
+  130  r3  answered  1 rounds   0 unanswered   0 refused    1294 ms
+  131  r1  answered  1 rounds   0 unanswered   0 refused    1089 ms
+  132  r3  answered  1 rounds   0 unanswered   0 refused    1418 ms
+  133  r1  answered  2 rounds   1 unanswered   0 refused   11355 ms
+  134  r3  answered  1 rounds   0 unanswered   0 refused    1431 ms
+  135  r1  answered  1 rounds   0 unanswered   0 refused    1102 ms
+  136  r3  answered  1 rounds   0 unanswered   0 refused    1310 ms
+  137  r1  answered  1 rounds   0 unanswered   0 refused    1075 ms
+  138  r3  answered  1 rounds   0 unanswered   0 refused    1467 ms
+  139  r1  answered  2 rounds   1 unanswered   0 refused   10994 ms
+  140  r3  answered  1 rounds   0 unanswered   0 refused    1121 ms
+  141  r1  answered  1 rounds   0 unanswered   0 refused    1136 ms
+  142  r3  answered  1 rounds   0 unanswered   0 refused    1208 ms
+  143  r1  answered  2 rounds   1 unanswered   0 refused   11036 ms
+  144  r3  answered  1 rounds   0 unanswered   0 refused    1188 ms
+  145  r1  answered  2 rounds   1 unanswered   0 refused   11429 ms
+  146  r3  answered  1 rounds   0 unanswered   0 refused    1175 ms
+  147  r1  answered  3 rounds   2 unanswered   0 refused   21330 ms
+  148  r3  answered  1 rounds   0 unanswered   0 refused    1705 ms
+  149  r1  answered  3 rounds   2 unanswered   0 refused   21129 ms
+  150  r3  answered  1 rounds   0 unanswered   0 refused    1400 ms
+  151  r1  answered  2 rounds   1 unanswered   0 refused   11048 ms
+  152  r3  answered  1 rounds   0 unanswered   0 refused    1362 ms
+  153  r1  answered  1 rounds   0 unanswered   0 refused    1323 ms
+  154  r3  answered  1 rounds   0 unanswered   0 refused    1226 ms
+  155  r1  answered  3 rounds   2 unanswered   0 refused   21071 ms
+  156  r3  answered  1 rounds   0 unanswered   0 refused    1474 ms
+  157  r1  answered  1 rounds   0 unanswered   0 refused    1386 ms
+  158  r3  answered  1 rounds   0 unanswered   0 refused    1284 ms
+  159  r1  answered  1 rounds   0 unanswered   0 refused    1277 ms
+  160  r3  answered  1 rounds   0 unanswered   0 refused    1357 ms
+  161  r1  answered  2 rounds   1 unanswered   0 refused   11114 ms
+  162  r3  answered  1 rounds   0 unanswered   0 refused    1313 ms
+  163  r1  answered  1 rounds   0 unanswered   0 refused    1402 ms
+  164  r3  answered  1 rounds   0 unanswered   0 refused    1422 ms
+  165  r1  answered  1 rounds   0 unanswered   0 refused    1135 ms
+  166  r3  answered  1 rounds   0 unanswered   0 refused    1114 ms
+  167  r1  answered  2 rounds   1 unanswered   0 refused   11115 ms
+  168  r3  answered  1 rounds   0 unanswered   0 refused    1175 ms
+  169  r1  answered  1 rounds   0 unanswered   0 refused    1060 ms
+  170  r3  answered  1 rounds   0 unanswered   0 refused    1197 ms
+  171  r1  answered  1 rounds   0 unanswered   0 refused    1220 ms
+  172  r3  answered  1 rounds   0 unanswered   0 refused    1206 ms
+  173  r1  answered  2 rounds   1 unanswered   0 refused   11256 ms
+  174  r3  answered  1 rounds   0 unanswered   0 refused    1316 ms
+  175  r1  answered  1 rounds   0 unanswered   0 refused    1196 ms
+  176  r3  answered  1 rounds   0 unanswered   0 refused    1359 ms
+  177  r1  answered  1 rounds   0 unanswered   0 refused    1094 ms
+  178  r3  answered  1 rounds   0 unanswered   0 refused    1213 ms
+  179  r1  answered  1 rounds   0 unanswered   0 refused    1021 ms
+  180  r3  answered  1 rounds   0 unanswered   0 refused    1176 ms
+  181  r1  answered  2 rounds   1 unanswered   0 refused   11127 ms
+  182  r3  answered  1 rounds   0 unanswered   0 refused    1190 ms
+  183  r1  answered  1 rounds   0 unanswered   0 refused    1011 ms
+  184  r3  answered  1 rounds   0 unanswered   0 refused    1202 ms
+  185  r1  answered  1 rounds   0 unanswered   0 refused    1296 ms
+  186  r3  answered  1 rounds   0 unanswered   0 refused    1332 ms
+  187  r1  answered  1 rounds   0 unanswered   0 refused    1265 ms
+  188  r3  answered  1 rounds   0 unanswered   0 refused    1318 ms
+  189  r1  answered  1 rounds   0 unanswered   0 refused    1323 ms
+  190  r3  answered  1 rounds   0 unanswered   0 refused    1118 ms
+  191  r1  answered  1 rounds   0 unanswered   0 refused    1097 ms
+  192  r3  answered  1 rounds   0 unanswered   0 refused    1240 ms
+  193  r1  answered  1 rounds   0 unanswered   0 refused    1271 ms
+  194  r3  answered  1 rounds   0 unanswered   0 refused    1277 ms
+  195  r1  answered  3 rounds   2 unanswered   0 refused   21143 ms
+  196  r3  answered  1 rounds   0 unanswered   0 refused     950 ms
+  197  r1  answered  1 rounds   0 unanswered   0 refused    1063 ms
+  198  r3  answered  1 rounds   0 unanswered   0 refused    1450 ms
+  199  r1  answered  1 rounds   0 unanswered   0 refused    1047 ms
+  200  r3  answered  1 rounds   0 unanswered   0 refused    1272 ms
+  201  r1  answered  4 rounds   3 unanswered   0 refused   31276 ms
+  202  r3  answered  1 rounds   0 unanswered   0 refused    1207 ms
+  203  r1  answered  2 rounds   1 unanswered   0 refused   11136 ms
+  204  r3  answered  1 rounds   0 unanswered   0 refused    1241 ms
+  205  r1  answered  1 rounds   0 unanswered   0 refused    1020 ms
+  206  r3  answered  1 rounds   0 unanswered   0 refused    1272 ms
+  207  r1  answered  1 rounds   0 unanswered   0 refused    1205 ms
+  208  r3  answered  1 rounds   0 unanswered   0 refused    1416 ms
+  209  r1  answered  2 rounds   1 unanswered   0 refused   11491 ms
+  210  r3  answered  1 rounds   0 unanswered   0 refused    1312 ms
+  211  r1  answered  1 rounds   0 unanswered   0 refused     999 ms
+  212  r3  answered  1 rounds   0 unanswered   0 refused    1184 ms
+  213  r1  answered  1 rounds   0 unanswered   0 refused    1386 ms
+  214  r3  answered  1 rounds   0 unanswered   0 refused    1241 ms
+  215  r1  answered  1 rounds   0 unanswered   0 refused    1143 ms
+  216  r3  answered  1 rounds   0 unanswered   0 refused    1251 ms
+  217  r1  answered  1 rounds   0 unanswered   0 refused    1406 ms
+  218  r3  answered  1 rounds   0 unanswered   0 refused     999 ms
+  219  r1  answered  1 rounds   0 unanswered   0 refused    1297 ms
+  220  r3  answered  1 rounds   0 unanswered   0 refused    1199 ms
+  221  r1  answered  1 rounds   0 unanswered   0 refused    1338 ms
+  222  r3  answered  1 rounds   0 unanswered   0 refused    1240 ms
+  223  r1  answered  2 rounds   1 unanswered   0 refused   11120 ms
+  224  r3  answered  1 rounds   0 unanswered   0 refused    1174 ms
+  225  r1  answered  1 rounds   0 unanswered   0 refused    1290 ms
+  226  r3  answered  1 rounds   0 unanswered   0 refused    1223 ms
+  227  r1  answered  1 rounds   0 unanswered   0 refused    1243 ms
+  228  r3  answered  1 rounds   0 unanswered   0 refused    1193 ms
+  229  r1  answered  1 rounds   0 unanswered   0 refused    1191 ms
+  230  r3  answered  1 rounds   0 unanswered   0 refused    1327 ms
+  231  r1  answered  2 rounds   1 unanswered   0 refused   11173 ms
+  232  r3  answered  1 rounds   0 unanswered   0 refused    1443 ms
+  233  r1  answered  3 rounds   2 unanswered   0 refused   21271 ms
+  234  r3  answered  1 rounds   0 unanswered   0 refused    1022 ms
+  235  r1  answered  1 rounds   0 unanswered   0 refused    1019 ms
+  236  r3  answered  1 rounds   0 unanswered   0 refused    1272 ms
+  237  r1  answered  1 rounds   0 unanswered   0 refused    1118 ms
+  238  r3  answered  1 rounds   0 unanswered   0 refused    1360 ms
+  239  r1  answered  3 rounds   2 unanswered   0 refused   21158 ms
+  240  r3  answered  1 rounds   0 unanswered   0 refused    1181 ms
+  241  r1  answered  1 rounds   0 unanswered   0 refused    1130 ms
+  242  r3  answered  1 rounds   0 unanswered   0 refused    1282 ms
+  243  r1  answered  2 rounds   1 unanswered   0 refused   11082 ms
+  244  r3  answered  1 rounds   0 unanswered   0 refused    1253 ms
+  245  r1  answered  1 rounds   0 unanswered   0 refused    1173 ms
+  246  r3  answered  1 rounds   0 unanswered   0 refused    1318 ms
+  247  r1  answered  2 rounds   1 unanswered   0 refused   11284 ms
+  248  r3  answered  1 rounds   0 unanswered   0 refused    1420 ms
+  249  r1  answered  3 rounds   2 unanswered   0 refused   20921 ms
+  250  r3  answered  1 rounds   0 unanswered   0 refused    1223 ms
+  251  r1  answered  1 rounds   0 unanswered   0 refused    1120 ms
+  252  r3  answered  1 rounds   0 unanswered   0 refused    1032 ms
+  253  r1  answered  2 rounds   1 unanswered   0 refused   11175 ms
+  254  r3  answered  1 rounds   0 unanswered   0 refused    1252 ms
+  255  r1  answered  1 rounds   0 unanswered   0 refused    1011 ms
+  256  r3  answered  1 rounds   0 unanswered   0 refused    1204 ms
+  257  r1  answered  2 rounds   1 unanswered   0 refused   11173 ms
+  258  r3  answered  1 rounds   0 unanswered   0 refused    1133 ms
+  259  r1  answered  1 rounds   0 unanswered   0 refused    1097 ms
+  260  r3  answered  1 rounds   0 unanswered   0 refused    1133 ms
+  261  r1  answered  1 rounds   0 unanswered   0 refused    1282 ms
+  262  r3  answered  1 rounds   0 unanswered   0 refused    1102 ms
+  263  r1  answered  1 rounds   0 unanswered   0 refused    1375 ms
+  264  r3  answered  1 rounds   0 unanswered   0 refused    1327 ms
+  265  r1  answered  1 rounds   0 unanswered   0 refused    1290 ms
+  266  r3  answered  1 rounds   0 unanswered   0 refused    1173 ms
+  267  r1  answered  1 rounds   0 unanswered   0 refused    1156 ms
+  268  r3  answered  1 rounds   0 unanswered   0 refused    1095 ms
+  269  r1  answered  1 rounds   0 unanswered   0 refused    1006 ms
+  270  r3  answered  1 rounds   0 unanswered   0 refused    1179 ms
+  271  r1  answered  1 rounds   0 unanswered   0 refused    1097 ms
+  272  r3  answered  1 rounds   0 unanswered   0 refused    1000 ms
+  273  r1  answered  1 rounds   0 unanswered   0 refused    1187 ms
+  274  r3  answered  1 rounds   0 unanswered   0 refused    1322 ms
+  275  r1  answered  1 rounds   0 unanswered   0 refused    1111 ms
+  276  r3  answered  1 rounds   0 unanswered   0 refused    1274 ms
+  277  r1  answered  1 rounds   0 unanswered   0 refused    1303 ms
+  278  r3  answered  1 rounds   0 unanswered   0 refused    1287 ms
+  279  r1  answered  5 rounds   4 unanswered   0 refused   41315 ms
+  280  r3  answered  1 rounds   0 unanswered   0 refused    1067 ms
+  281  r1  answered  1 rounds   0 unanswered   0 refused    1158 ms
+  282  r3  answered  1 rounds   0 unanswered   0 refused     976 ms
+  283  r1  answered  1 rounds   0 unanswered   0 refused    1295 ms
+  284  r3  answered  1 rounds   0 unanswered   0 refused    1198 ms
+  285  r1  answered  1 rounds   0 unanswered   0 refused    1246 ms
+  286  r3  answered  1 rounds   0 unanswered   0 refused    1175 ms
+  287  r1  answered  1 rounds   0 unanswered   0 refused    1035 ms
+  288  r3  answered  1 rounds   0 unanswered   0 refused    1372 ms
+  289  r1  answered  2 rounds   1 unanswered   0 refused   11038 ms
+  290  r3  answered  1 rounds   0 unanswered   0 refused     976 ms
+  291  r1  answered  1 rounds   0 unanswered   0 refused    1197 ms
+  292  r3  answered  1 rounds   0 unanswered   0 refused    1127 ms
+  293  r1  answered  1 rounds   0 unanswered   0 refused    1205 ms
+  294  r3  answered  1 rounds   0 unanswered   0 refused    1381 ms
+  295  r1  answered  1 rounds   0 unanswered   0 refused    1067 ms
+  296  r3  answered  1 rounds   0 unanswered   0 refused    1543 ms
+  297  r1  answered  1 rounds   0 unanswered   0 refused     990 ms
+  298  r3  answered  1 rounds   0 unanswered   0 refused    1243 ms
+  299  r1  answered  2 rounds   1 unanswered   0 refused   11409 ms
+  300  r3  answered  1 rounds   0 unanswered   0 refused    1192 ms
+
+=== rounds of 1 (sequential retry) ===
+trials                       150
+first-round failure rate      34.67%  (52/150)   the stream's probe went unanswered
+wallet-visible failure rate    0.00%  (0/150)   no stream answered at all
+streams opened               215   (1.4 per trial, 0 cancelled once another answered)
+reduction factor             >150x  (no visible failure in this arm)
+
+failure rate per round, conditional on every earlier round failing
+round  reached  failed    rate
+    1      150      52   34.67%
+    2       52      10   19.23%
+    3       10       2   20.00%
+    4        2       1   50.00%
+    5        1       0    0.00%
+
+latency
+round that answered                p50   1187 ms | p90   1408 ms | p99   2734 ms | max   3402 ms
+establishment seen by the wallet   p50   1323 ms | p90  11409 ms | p99  31276 ms | max  41315 ms
+time spent on a discarded stream   p50  10001 ms | p90  10001 ms | p99  10002 ms | max  10025 ms
+a discarded stream costs the whole probe timeout (10s), because the failure is silent
+
+=== rounds of 3 (opened together) ===
+trials                       150
+first-round failure rate       0.67%  (1/150)   no stream of the round answered
+wallet-visible failure rate    0.00%  (0/150)   no stream answered at all
+streams opened               453   (3.0 per trial, 300 cancelled once another answered)
+reduction factor             >150x  (no visible failure in this arm)
+per-stream rate              not measurable with rounds of 3: the losers are cancelled seconds before their deadline
+
+NOTE: a rate this low cannot separate the design from a quiet afternoon. Treat any reduction above as unmeasured, not as passing.
+
+failure rate per round, conditional on every earlier round failing
+round  reached  failed    rate
+    1      150       1    0.67%
+    2        1       0    0.00%
+
+streams that went unanswered inside one round
+opened  unanswered  rounds
+     3           0     150
+     3           3       1
+
+latency
+round that answered                p50   1240 ms | p90   1418 ms | p99   2163 ms | max   6340 ms
+establishment seen by the wallet   p50   1240 ms | p90   1419 ms | p99   6340 ms | max  11159 ms
+time spent on a discarded stream   p50  10028 ms | p90  10037 ms | p99  10037 ms | max  10037 ms
+a discarded stream costs the whole probe timeout (10s), because the failure is silent
+
+=== comparison, interleaved in the same window ===
+                                   rounds of 1   rounds of 3
+first-round failure rate                34.67%         0.67%
+wallet-visible failure rate              0.00%         0.00%
+establishment p50                      1323 ms       1240 ms
+establishment p99                     31276 ms       6340 ms
+streams opened per trial                   1.4           3.0
+
+Are simultaneous streams independent?
+  per-stream failure rate, from rounds of 1     34.67%
+  a round of 3 should then fail               4.17%,  observed   0.67%

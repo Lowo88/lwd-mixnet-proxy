@@ -1,0 +1,216 @@
+dialling server-C
+trials 200 | attempts 1 | round sizes 1 interleaved | probe timeout 6s | reply blocks SDK default
+
+    1  r1 g0    answered  1 rounds   0 unanswered   0 refused    1327 ms
+    2  r1 g2    answered  1 rounds   0 unanswered   0 refused    1259 ms
+    3  r1 g8    answered  1 rounds   0 unanswered   0 refused    1304 ms
+    4  r1 g20   answered  1 rounds   0 unanswered   0 refused    1372 ms
+    5  r1 g0    answered  1 rounds   0 unanswered   0 refused    1265 ms
+    6  r1 g2    answered  1 rounds   0 unanswered   0 refused    1411 ms
+    7  r1 g8    answered  1 rounds   0 unanswered   0 refused    1211 ms
+    8  r1 g20   answered  1 rounds   0 unanswered   0 refused    1118 ms
+    9  r1 g0    answered  1 rounds   0 unanswered   0 refused    1238 ms
+   10  r1 g2    answered  1 rounds   0 unanswered   0 refused    1297 ms
+   11  r1 g8    answered  1 rounds   0 unanswered   0 refused    1284 ms
+   12  r1 g20   gave-up   1 rounds   1 unanswered   0 refused    6000 ms
+   13  r1 g0    gave-up   1 rounds   1 unanswered   0 refused    6022 ms
+   14  r1 g2    answered  1 rounds   0 unanswered   0 refused     991 ms
+   15  r1 g8    answered  1 rounds   0 unanswered   0 refused    1319 ms
+   16  r1 g20   answered  1 rounds   0 unanswered   0 refused    1387 ms
+   17  r1 g0    gave-up   1 rounds   1 unanswered   0 refused    6015 ms
+   18  r1 g2    answered  1 rounds   0 unanswered   0 refused    1161 ms
+   19  r1 g8    answered  1 rounds   0 unanswered   0 refused    1379 ms
+   20  r1 g20   answered  1 rounds   0 unanswered   0 refused    1109 ms
+   21  r1 g0    answered  1 rounds   0 unanswered   0 refused    1098 ms
+   22  r1 g2    answered  1 rounds   0 unanswered   0 refused    2863 ms
+   23  r1 g8    gave-up   1 rounds   1 unanswered   0 refused    6002 ms
+   24  r1 g20   answered  1 rounds   0 unanswered   0 refused    1057 ms
+   25  r1 g0    answered  1 rounds   0 unanswered   0 refused    1302 ms
+   26  r1 g2    answered  1 rounds   0 unanswered   0 refused    1228 ms
+   27  r1 g8    answered  1 rounds   0 unanswered   0 refused     966 ms
+   28  r1 g20   answered  1 rounds   0 unanswered   0 refused    1304 ms
+   29  r1 g0    answered  1 rounds   0 unanswered   0 refused    1765 ms
+   30  r1 g2    gave-up   1 rounds   1 unanswered   0 refused    6001 ms
+   31  r1 g8    answered  1 rounds   0 unanswered   0 refused    1138 ms
+   32  r1 g20   answered  1 rounds   0 unanswered   0 refused    2936 ms
+   33  r1 g0    gave-up   1 rounds   1 unanswered   0 refused    6015 ms
+   34  r1 g2    answered  1 rounds   0 unanswered   0 refused    1168 ms
+   35  r1 g8    gave-up   1 rounds   1 unanswered   0 refused    6000 ms
+   36  r1 g20   answered  1 rounds   0 unanswered   0 refused    1232 ms
+   37  r1 g0    answered  1 rounds   0 unanswered   0 refused    1177 ms
+   38  r1 g2    answered  1 rounds   0 unanswered   0 refused    1274 ms
+   39  r1 g8    gave-up   1 rounds   1 unanswered   0 refused    6001 ms
+   40  r1 g20   gave-up   1 rounds   1 unanswered   0 refused    6005 ms
+   41  r1 g0    answered  1 rounds   0 unanswered   0 refused    1428 ms
+   42  r1 g2    gave-up   1 rounds   1 unanswered   0 refused    6002 ms
+   43  r1 g8    gave-up   1 rounds   1 unanswered   0 refused    6001 ms
+   44  r1 g20   gave-up   1 rounds   1 unanswered   0 refused    6001 ms
+   45  r1 g0    answered  1 rounds   0 unanswered   0 refused    1197 ms
+   46  r1 g2    answered  1 rounds   0 unanswered   0 refused    1408 ms
+   47  r1 g8    gave-up   1 rounds   1 unanswered   0 refused    6002 ms
+   48  r1 g20   answered  1 rounds   0 unanswered   0 refused    1138 ms
+   49  r1 g0    answered  1 rounds   0 unanswered   0 refused    1515 ms
+   50  r1 g2    answered  1 rounds   0 unanswered   0 refused    1093 ms
+   51  r1 g8    answered  1 rounds   0 unanswered   0 refused    1338 ms
+   52  r1 g20   answered  1 rounds   0 unanswered   0 refused    1867 ms
+   53  r1 g0    answered  1 rounds   0 unanswered   0 refused    1400 ms
+   54  r1 g2    answered  1 rounds   0 unanswered   0 refused    1034 ms
+   55  r1 g8    answered  1 rounds   0 unanswered   0 refused    1239 ms
+   56  r1 g20   answered  1 rounds   0 unanswered   0 refused    1292 ms
+   57  r1 g0    gave-up   1 rounds   1 unanswered   0 refused    6017 ms
+   58  r1 g2    answered  1 rounds   0 unanswered   0 refused    1315 ms
+   59  r1 g8    answered  1 rounds   0 unanswered   0 refused    1374 ms
+   60  r1 g20   gave-up   1 rounds   1 unanswered   0 refused    6003 ms
+   61  r1 g0    answered  1 rounds   0 unanswered   0 refused    1387 ms
+   62  r1 g2    answered  1 rounds   0 unanswered   0 refused    1189 ms
+   63  r1 g8    gave-up   1 rounds   1 unanswered   0 refused    6000 ms
+   64  r1 g20   answered  1 rounds   0 unanswered   0 refused    1265 ms
+   65  r1 g0    answered  1 rounds   0 unanswered   0 refused    1917 ms
+   66  r1 g2    answered  1 rounds   0 unanswered   0 refused    1304 ms
+   67  r1 g8    answered  1 rounds   0 unanswered   0 refused    1161 ms
+   68  r1 g20   answered  1 rounds   0 unanswered   0 refused    1286 ms
+   69  r1 g0    gave-up   1 rounds   1 unanswered   0 refused    6023 ms
+   70  r1 g2    gave-up   1 rounds   1 unanswered   0 refused    6005 ms
+   71  r1 g8    gave-up   1 rounds   1 unanswered   0 refused    6002 ms
+   72  r1 g20   answered  1 rounds   0 unanswered   0 refused    1403 ms
+   73  r1 g0    answered  1 rounds   0 unanswered   0 refused    1338 ms
+   74  r1 g2    answered  1 rounds   0 unanswered   0 refused    1052 ms
+   75  r1 g8    answered  1 rounds   0 unanswered   0 refused    1102 ms
+   76  r1 g20   answered  1 rounds   0 unanswered   0 refused    1220 ms
+   77  r1 g0    answered  1 rounds   0 unanswered   0 refused    1203 ms
+   78  r1 g2    answered  1 rounds   0 unanswered   0 refused    1589 ms
+   79  r1 g8    gave-up   1 rounds   1 unanswered   0 refused    6000 ms
+   80  r1 g20   gave-up   1 rounds   1 unanswered   0 refused    6001 ms
+   81  r1 g0    gave-up   1 rounds   1 unanswered   0 refused    6028 ms
+   82  r1 g2    answered  1 rounds   0 unanswered   0 refused    1314 ms
+   83  r1 g8    answered  1 rounds   0 unanswered   0 refused    1261 ms
+   84  r1 g20   answered  1 rounds   0 unanswered   0 refused    1293 ms
+   85  r1 g0    answered  1 rounds   0 unanswered   0 refused    1132 ms
+   86  r1 g2    answered  1 rounds   0 unanswered   0 refused    1126 ms
+   87  r1 g8    gave-up   1 rounds   1 unanswered   0 refused    6001 ms
+   88  r1 g20   answered  1 rounds   0 unanswered   0 refused    1194 ms
+   89  r1 g0    gave-up   1 rounds   1 unanswered   0 refused    6026 ms
+   90  r1 g2    answered  1 rounds   0 unanswered   0 refused    1275 ms
+   91  r1 g8    gave-up   1 rounds   1 unanswered   0 refused    6001 ms
+   92  r1 g20   answered  1 rounds   0 unanswered   0 refused    1271 ms
+   93  r1 g0    answered  1 rounds   0 unanswered   0 refused    1350 ms
+   94  r1 g2    gave-up   1 rounds   1 unanswered   0 refused    6002 ms
+   95  r1 g8    answered  1 rounds   0 unanswered   0 refused    1163 ms
+   96  r1 g20   gave-up   1 rounds   1 unanswered   0 refused    6001 ms
+   97  r1 g0    gave-up   1 rounds   1 unanswered   0 refused    6024 ms
+   98  r1 g2    answered  1 rounds   0 unanswered   0 refused    2732 ms
+   99  r1 g8    answered  1 rounds   0 unanswered   0 refused    1321 ms
+  100  r1 g20   answered  1 rounds   0 unanswered   0 refused    1859 ms
+  101  r1 g0    gave-up   1 rounds   1 unanswered   0 refused    6029 ms
+  102  r1 g2    answered  1 rounds   0 unanswered   0 refused    1079 ms
+  103  r1 g8    answered  1 rounds   0 unanswered   0 refused    1202 ms
+  104  r1 g20   answered  1 rounds   0 unanswered   0 refused    1007 ms
+  105  r1 g0    gave-up   1 rounds   1 unanswered   0 refused    6028 ms
+  106  r1 g2    gave-up   1 rounds   1 unanswered   0 refused    6002 ms
+  107  r1 g8    answered  1 rounds   0 unanswered   0 refused    1143 ms
+  108  r1 g20   gave-up   1 rounds   1 unanswered   0 refused    6006 ms
+  109  r1 g0    answered  1 rounds   0 unanswered   0 refused    1279 ms
+  110  r1 g2    answered  1 rounds   0 unanswered   0 refused    1282 ms
+  111  r1 g8    answered  1 rounds   0 unanswered   0 refused    1120 ms
+  112  r1 g20   gave-up   1 rounds   1 unanswered   0 refused    6001 ms
+  113  r1 g0    answered  1 rounds   0 unanswered   0 refused    1141 ms
+  114  r1 g2    gave-up   1 rounds   1 unanswered   0 refused    6006 ms
+  115  r1 g8    answered  1 rounds   0 unanswered   0 refused    1572 ms
+  116  r1 g20   answered  1 rounds   0 unanswered   0 refused    1210 ms
+  117  r1 g0    gave-up   1 rounds   1 unanswered   0 refused    6031 ms
+  118  r1 g2    answered  1 rounds   0 unanswered   0 refused    1314 ms
+  119  r1 g8    gave-up   1 rounds   1 unanswered   0 refused    6014 ms
+  120  r1 g20   gave-up   1 rounds   1 unanswered   0 refused    6001 ms
+  121  r1 g0    answered  1 rounds   0 unanswered   0 refused    1644 ms
+  122  r1 g2    gave-up   1 rounds   1 unanswered   0 refused    6000 ms
+  123  r1 g8    answered  1 rounds   0 unanswered   0 refused    1342 ms
+  124  r1 g20   answered  1 rounds   0 unanswered   0 refused    1178 ms
+  125  r1 g0    answered  1 rounds   0 unanswered   0 refused    1523 ms
+  126  r1 g2    answered  1 rounds   0 unanswered   0 refused    1109 ms
+  127  r1 g8    gave-up   1 rounds   1 unanswered   0 refused    6005 ms
+  128  r1 g20   gave-up   1 rounds   1 unanswered   0 refused    6011 ms
+  129  r1 g0    answered  1 rounds   0 unanswered   0 refused    1175 ms
+  130  r1 g2    answered  1 rounds   0 unanswered   0 refused     989 ms
+  131  r1 g8    answered  1 rounds   0 unanswered   0 refused    2475 ms
+  132  r1 g20   answered  1 rounds   0 unanswered   0 refused    1288 ms
+  133  r1 g0    answered  1 rounds   0 unanswered   0 refused    1208 ms
+  134  r1 g2    gave-up   1 rounds   1 unanswered   0 refused    6007 ms
+  135  r1 g8    answered  1 rounds   0 unanswered   0 refused    1279 ms
+  136  r1 g20   answered  1 rounds   0 unanswered   0 refused    1202 ms
+  137  r1 g0    answered  1 rounds   0 unanswered   0 refused    1541 ms
+  138  r1 g2    answered  1 rounds   0 unanswered   0 refused    1374 ms
+  139  r1 g8    gave-up   1 rounds   1 unanswered   0 refused    6001 ms
+  140  r1 g20   gave-up   1 rounds   1 unanswered   0 refused    6001 ms
+  141  r1 g0    gave-up   1 rounds   1 unanswered   0 refused    6021 ms
+  142  r1 g2    gave-up   1 rounds   1 unanswered   0 refused    6002 ms
+  143  r1 g8    gave-up   1 rounds   1 unanswered   0 refused    6011 ms
+  144  r1 g20   gave-up   1 rounds   0 unanswered   1 refused       0 ms
+  145  r1 g0    gave-up   1 rounds   0 unanswered   1 refused       0 ms
+  146  r1 g2    gave-up   1 rounds   0 unanswered   1 refused       0 ms
+  147  r1 g8    gave-up   1 rounds   0 unanswered   1 refused       0 ms
+  148  r1 g20   gave-up   1 rounds   0 unanswered   1 refused       0 ms
+
+STOPPING after 148 trials: the last 5 opened no stream at all. The local client is no longer able to send, so nothing further would measure the transport.
+
+INVALID: 5 opens were refused by the local client, which is a failure of this machine rather than of the transport.
+Every number below mixes the two. Restart the client and measure again.
+
+=== rounds of 1, 0s gap (sequential retry) ===
+trials                       37
+first-round failure rate      35.14%  (13/37)   the stream's probe went unanswered
+wallet-visible failure rate   35.14%  (13/37)   no stream answered at all
+streams opened               36   (1.0 per trial, 0 cancelled once another answered)
+reduction factor                1.0x
+
+latency
+round that answered                p50   1327 ms | p90   1644 ms | p99   1917 ms | max   1917 ms
+establishment seen by the wallet   p50   1327 ms | p90   1644 ms | p99   1917 ms | max   1917 ms
+time spent on a discarded stream   p50   6023 ms | p90   6029 ms | p99   6031 ms | max   6031 ms
+a discarded stream costs the whole probe timeout (6s), because the failure is silent
+
+=== rounds of 1, 2s gap (sequential retry) ===
+trials                       37
+first-round failure rate      27.03%  (10/37)   the stream's probe went unanswered
+wallet-visible failure rate   27.03%  (10/37)   no stream answered at all
+streams opened               36   (1.0 per trial, 0 cancelled once another answered)
+reduction factor                1.0x
+
+latency
+round that answered                p50   1274 ms | p90   1411 ms | p99   2863 ms | max   2863 ms
+establishment seen by the wallet   p50   1274 ms | p90   1411 ms | p99   2863 ms | max   2863 ms
+time spent on a discarded stream   p50   6002 ms | p90   6006 ms | p99   6007 ms | max   6007 ms
+a discarded stream costs the whole probe timeout (6s), because the failure is silent
+
+=== rounds of 1, 8s gap (sequential retry) ===
+trials                       37
+first-round failure rate      40.54%  (15/37)   the stream's probe went unanswered
+wallet-visible failure rate   40.54%  (15/37)   no stream answered at all
+streams opened               36   (1.0 per trial, 0 cancelled once another answered)
+reduction factor                1.0x
+
+latency
+round that answered                p50   1279 ms | p90   1379 ms | p99   2475 ms | max   2475 ms
+establishment seen by the wallet   p50   1279 ms | p90   1379 ms | p99   2475 ms | max   2475 ms
+time spent on a discarded stream   p50   6001 ms | p90   6011 ms | p99   6014 ms | max   6014 ms
+a discarded stream costs the whole probe timeout (6s), because the failure is silent
+
+=== rounds of 1, 20s gap (sequential retry) ===
+trials                       37
+first-round failure rate      35.14%  (13/37)   the stream's probe went unanswered
+wallet-visible failure rate   35.14%  (13/37)   no stream answered at all
+streams opened               35   (0.9 per trial, 0 cancelled once another answered)
+reduction factor                1.0x
+
+latency
+round that answered                p50   1271 ms | p90   1859 ms | p99   2936 ms | max   2936 ms
+establishment seen by the wallet   p50   1271 ms | p90   1859 ms | p99   2936 ms | max   2936 ms
+time spent on a discarded stream   p50   6001 ms | p90   6006 ms | p99   6011 ms | max   6011 ms
+a discarded stream costs the whole probe timeout (6s), because the failure is silent
+
+=== comparison, interleaved in the same window ===
+                             rounds of 1, 0s gap rounds of 1, 2s gap rounds of 1, 8s gaprounds of 1, 20s gap
+first-round failure rate                  35.14%              27.03%              40.54%              35.14%
+wallet-visible failure rate               35.14%              27.03%              40.54%              35.14%
+establishment p50                        1327 ms             1274 ms             1279 ms             1271 ms
+establishment p99                        1917 ms             2863 ms             2475 ms             2936 ms
+streams opened per trial                     1.0                 1.0                 1.0                 0.9

@@ -140,7 +140,7 @@ runs that had to be thrown out and what they teach, are in
 
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — what the pieces are and how bytes move.
 - [`docs/decisions/`](docs/decisions/README.md) — why it looks like this.
-- [`docs/measurements/`](docs/measurements/2026-08-06-probe-and-retry.md) — what was measured, and what it cost to measure it properly.
+- [`docs/measurements/`](docs/measurements/2026-08-06-probe-and-retry.md) — what was measured, and what it cost to measure it properly. Raw output from every run is kept alongside it.
 
 ## Acknowledgments
 

@@ -1,0 +1,327 @@
+dialling server-A
+trials 300 | attempts 4 | 1 at a time | probe timeout 10s | reply blocks SDK default
+
+    1  answered   1 rounds   0 discarded    2357 ms
+    2  answered   2 rounds   1 discarded   11191 ms
+    3  answered   2 rounds   1 discarded   11463 ms
+    4  answered   2 rounds   1 discarded   11271 ms
+    5  answered   1 rounds   0 discarded    1153 ms
+    6  answered   2 rounds   1 discarded   12737 ms
+    7  answered   1 rounds   0 discarded    3129 ms
+    8  answered   1 rounds   0 discarded    1440 ms
+    9  answered   2 rounds   1 discarded   11531 ms
+   10  answered   1 rounds   0 discarded    1243 ms
+   11  answered   1 rounds   0 discarded    1336 ms
+   12  answered   2 rounds   1 discarded   11122 ms
+   13  answered   1 rounds   0 discarded    1559 ms
+   14  answered   2 rounds   1 discarded   11406 ms
+   15  answered   1 rounds   0 discarded    1691 ms
+   16  answered   2 rounds   1 discarded   13181 ms
+   17  answered   1 rounds   0 discarded    1341 ms
+   18  GAVE UP    4 rounds   4 discarded   40008 ms
+   19  answered   1 rounds   0 discarded    2827 ms
+   20  answered   1 rounds   0 discarded    2786 ms
+   21  answered   3 rounds   2 discarded   21446 ms
+   22  answered   1 rounds   0 discarded    1262 ms
+   23  answered   2 rounds   1 discarded   11301 ms
+   24  answered   3 rounds   2 discarded   21408 ms
+   25  answered   2 rounds   1 discarded   11343 ms
+   26  answered   2 rounds   1 discarded   11332 ms
+   27  answered   4 rounds   3 discarded   31394 ms
+   28  answered   1 rounds   0 discarded    1456 ms
+   29  answered   1 rounds   0 discarded    2797 ms
+   30  answered   1 rounds   0 discarded    1513 ms
+   31  answered   1 rounds   0 discarded    1584 ms
+   32  answered   2 rounds   1 discarded   11453 ms
+   33  answered   1 rounds   0 discarded    1139 ms
+   34  answered   3 rounds   2 discarded   25615 ms
+   35  answered   1 rounds   0 discarded    1871 ms
+   36  answered   1 rounds   0 discarded    1420 ms
+   37  answered   1 rounds   0 discarded    1452 ms
+   38  answered   1 rounds   0 discarded    1770 ms
+   39  answered   2 rounds   1 discarded   11538 ms
+   40  answered   1 rounds   0 discarded    1226 ms
+   41  answered   2 rounds   1 discarded   11414 ms
+   42  answered   2 rounds   1 discarded   11809 ms
+   43  answered   3 rounds   2 discarded   28278 ms
+   44  answered   1 rounds   0 discarded    1080 ms
+   45  answered   1 rounds   0 discarded    1140 ms
+   46  answered   2 rounds   1 discarded   13147 ms
+   47  answered   1 rounds   0 discarded    1167 ms
+   48  answered   1 rounds   0 discarded    1676 ms
+   49  answered   2 rounds   1 discarded   11092 ms
+   50  answered   1 rounds   0 discarded    1062 ms
+   51  answered   1 rounds   0 discarded    1119 ms
+   52  answered   1 rounds   0 discarded    3272 ms
+   53  answered   1 rounds   0 discarded    1303 ms
+   54  answered   2 rounds   1 discarded   12880 ms
+   55  answered   1 rounds   0 discarded    1752 ms
+   56  answered   2 rounds   1 discarded   11222 ms
+   57  answered   2 rounds   1 discarded   11634 ms
+   58  answered   3 rounds   2 discarded   21094 ms
+   59  answered   1 rounds   0 discarded    1327 ms
+   60  answered   1 rounds   0 discarded    1214 ms
+   61  answered   2 rounds   1 discarded   11292 ms
+   62  answered   1 rounds   0 discarded    1388 ms
+   63  answered   1 rounds   0 discarded    1500 ms
+   64  answered   2 rounds   1 discarded   11115 ms
+   65  answered   2 rounds   1 discarded   11434 ms
+   66  answered   1 rounds   0 discarded    1137 ms
+   67  answered   1 rounds   0 discarded    1160 ms
+   68  answered   1 rounds   0 discarded    1324 ms
+   69  answered   1 rounds   0 discarded    1172 ms
+   70  answered   1 rounds   0 discarded    1152 ms
+   71  answered   3 rounds   2 discarded   22543 ms
+   72  answered   2 rounds   1 discarded   11176 ms
+   73  answered   2 rounds   1 discarded   11266 ms
+   74  answered   2 rounds   1 discarded   11373 ms
+   75  answered   4 rounds   3 discarded   31497 ms
+   76  answered   2 rounds   1 discarded   11130 ms
+   77  answered   2 rounds   1 discarded   11163 ms
+   78  answered   1 rounds   0 discarded    1279 ms
+   79  answered   2 rounds   1 discarded   11343 ms
+   80  answered   1 rounds   0 discarded    1397 ms
+   81  answered   3 rounds   2 discarded   22968 ms
+   82  answered   2 rounds   1 discarded   19478 ms
+   83  answered   3 rounds   2 discarded   28734 ms
+   84  answered   1 rounds   0 discarded    3546 ms
+   85  answered   2 rounds   1 discarded   13175 ms
+   86  answered   2 rounds   1 discarded   11041 ms
+   87  answered   1 rounds   0 discarded    2611 ms
+   88  answered   3 rounds   2 discarded   23164 ms
+   89  answered   1 rounds   0 discarded    2021 ms
+   90  answered   1 rounds   0 discarded     926 ms
+   91  answered   2 rounds   1 discarded   12894 ms
+   92  answered   2 rounds   1 discarded   11416 ms
+   93  answered   3 rounds   2 discarded   21325 ms
+   94  answered   1 rounds   0 discarded    2742 ms
+   95  answered   1 rounds   0 discarded    3031 ms
+   96  answered   1 rounds   0 discarded    2810 ms
+   97  answered   2 rounds   1 discarded   11330 ms
+   98  answered   1 rounds   0 discarded    1358 ms
+   99  answered   2 rounds   1 discarded   11314 ms
+  100  answered   2 rounds   1 discarded   11571 ms
+  101  answered   1 rounds   0 discarded    1223 ms
+  102  answered   1 rounds   0 discarded    1167 ms
+  103  answered   1 rounds   0 discarded    1520 ms
+  104  answered   1 rounds   0 discarded    1226 ms
+  105  answered   2 rounds   1 discarded   11189 ms
+  106  answered   1 rounds   0 discarded     999 ms
+  107  answered   1 rounds   0 discarded    1456 ms
+  108  answered   1 rounds   0 discarded    1719 ms
+  109  answered   3 rounds   2 discarded   22950 ms
+  110  answered   1 rounds   0 discarded    1377 ms
+  111  answered   2 rounds   1 discarded   11424 ms
+  112  answered   1 rounds   0 discarded    1143 ms
+  113  answered   3 rounds   2 discarded   21351 ms
+  114  answered   1 rounds   0 discarded    3231 ms
+  115  answered   1 rounds   0 discarded    1671 ms
+  116  answered   2 rounds   1 discarded   13575 ms
+  117  answered   1 rounds   0 discarded    1622 ms
+  118  answered   4 rounds   3 discarded   31328 ms
+  119  answered   3 rounds   2 discarded   21301 ms
+  120  answered   1 rounds   0 discarded    1268 ms
+  121  answered   1 rounds   0 discarded    1274 ms
+  122  answered   1 rounds   0 discarded    2960 ms
+  123  answered   3 rounds   2 discarded   21451 ms
+  124  answered   1 rounds   0 discarded    1116 ms
+  125  answered   3 rounds   2 discarded   21290 ms
+  126  answered   1 rounds   0 discarded    2557 ms
+  127  answered   1 rounds   0 discarded    1181 ms
+  128  answered   1 rounds   0 discarded    1345 ms
+  129  GAVE UP    4 rounds   4 discarded   40004 ms
+  130  GAVE UP    4 rounds   4 discarded   40005 ms
+  131  answered   3 rounds   2 discarded   21610 ms
+  132  answered   1 rounds   0 discarded    1577 ms
+  133  answered   1 rounds   0 discarded    1476 ms
+  134  answered   1 rounds   0 discarded    1230 ms
+  135  answered   1 rounds   0 discarded    1257 ms
+  136  answered   1 rounds   0 discarded    1248 ms
+  137  answered   2 rounds   1 discarded   11309 ms
+  138  answered   1 rounds   0 discarded    1564 ms
+  139  answered   1 rounds   0 discarded    1393 ms
+  140  answered   2 rounds   1 discarded   11173 ms
+  141  answered   1 rounds   0 discarded    1207 ms
+  142  answered   1 rounds   0 discarded    1436 ms
+  143  answered   1 rounds   0 discarded    1280 ms
+  144  answered   1 rounds   0 discarded    1396 ms
+  145  answered   1 rounds   0 discarded    1631 ms
+  146  answered   4 rounds   3 discarded   32055 ms
+  147  answered   1 rounds   0 discarded    1521 ms
+  148  answered   2 rounds   1 discarded   11084 ms
+  149  GAVE UP    4 rounds   4 discarded   40003 ms
+  150  GAVE UP    4 rounds   4 discarded   40854 ms
+  151  GAVE UP    4 rounds   4 discarded  298474 ms
+  152  GAVE UP    4 rounds   4 discarded   40003 ms
+  153  GAVE UP    4 rounds   4 discarded   40007 ms
+  154  answered   4 rounds   3 discarded   53057 ms
+  155  answered   2 rounds   1 discarded   12820 ms
+  156  answered   1 rounds   0 discarded    1289 ms
+  157  answered   1 rounds   0 discarded    1069 ms
+  158  answered   4 rounds   3 discarded   31249 ms
+  159  answered   2 rounds   1 discarded   11547 ms
+  160  answered   1 rounds   0 discarded    1343 ms
+  161  answered   1 rounds   0 discarded    1713 ms
+  162  answered   1 rounds   0 discarded    1038 ms
+  163  answered   1 rounds   0 discarded    1547 ms
+  164  answered   1 rounds   0 discarded    1094 ms
+  165  answered   1 rounds   0 discarded    1020 ms
+  166  answered   3 rounds   2 discarded   21240 ms
+  167  answered   4 rounds   3 discarded   33474 ms
+  168  answered   1 rounds   0 discarded    1319 ms
+  169  answered   1 rounds   0 discarded    1267 ms
+  170  answered   1 rounds   0 discarded    1638 ms
+  171  answered   4 rounds   3 discarded   31335 ms
+  172  answered   3 rounds   2 discarded   21187 ms
+  173  answered   4 rounds   3 discarded   31039 ms
+  174  answered   1 rounds   0 discarded    3255 ms
+  175  answered   1 rounds   0 discarded    1388 ms
+  176  answered   1 rounds   0 discarded    1090 ms
+  177  answered   3 rounds   2 discarded   22016 ms
+  178  answered   1 rounds   0 discarded    1047 ms
+  179  answered   2 rounds   1 discarded   11336 ms
+  180  answered   1 rounds   0 discarded    1548 ms
+  181  answered   1 rounds   0 discarded    3038 ms
+  182  answered   1 rounds   0 discarded    1685 ms
+  183  answered   1 rounds   0 discarded    1215 ms
+  184  answered   3 rounds   2 discarded   22452 ms
+  185  answered   1 rounds   0 discarded    1120 ms
+  186  answered   1 rounds   0 discarded    1191 ms
+  187  answered   3 rounds   2 discarded   21420 ms
+  188  answered   1 rounds   0 discarded    1099 ms
+  189  answered   1 rounds   0 discarded    1122 ms
+  190  answered   1 rounds   0 discarded     990 ms
+  191  answered   1 rounds   0 discarded    1104 ms
+  192  answered   1 rounds   0 discarded    2661 ms
+  193  answered   2 rounds   1 discarded   11406 ms
+  194  answered   3 rounds   2 discarded   21081 ms
+  195  answered   2 rounds   1 discarded   11495 ms
+  196  answered   1 rounds   0 discarded    1558 ms
+  197  answered   1 rounds   0 discarded    1280 ms
+  198  answered   3 rounds   2 discarded   21473 ms
+  199  answered   2 rounds   1 discarded   11705 ms
+  200  answered   3 rounds   2 discarded   21435 ms
+  201  answered   2 rounds   1 discarded   11220 ms
+  202  answered   1 rounds   0 discarded    1446 ms
+  203  answered   3 rounds   2 discarded   21127 ms
+  204  answered   2 rounds   1 discarded   11524 ms
+  205  answered   1 rounds   0 discarded    1347 ms
+  206  answered   1 rounds   0 discarded    1053 ms
+  207  answered   1 rounds   0 discarded    1368 ms
+  208  answered   1 rounds   0 discarded    1196 ms
+  209  answered   1 rounds   0 discarded    1208 ms
+  210  answered   2 rounds   1 discarded   12186 ms
+  211  answered   1 rounds   0 discarded    1420 ms
+  212  answered   1 rounds   0 discarded     948 ms
+  213  answered   1 rounds   0 discarded    1265 ms
+  214  answered   2 rounds   1 discarded   11424 ms
+  215  answered   1 rounds   0 discarded    1196 ms
+  216  GAVE UP    4 rounds   4 discarded   40006 ms
+  217  GAVE UP    4 rounds   4 discarded   40006 ms
+  218  answered   4 rounds   3 discarded   54135 ms
+  219  answered   1 rounds   0 discarded    1270 ms
+  220  answered   1 rounds   0 discarded    1484 ms
+  221  answered   2 rounds   1 discarded   11522 ms
+  222  GAVE UP    4 rounds   4 discarded   40007 ms
+  223  GAVE UP    4 rounds   4 discarded   73034 ms
+  224  GAVE UP    4 rounds   4 discarded       0 ms
+  225  GAVE UP    4 rounds   4 discarded       0 ms
+  226  GAVE UP    4 rounds   4 discarded       0 ms
+  227  GAVE UP    4 rounds   4 discarded       0 ms
+  228  GAVE UP    4 rounds   4 discarded       0 ms
+  229  GAVE UP    4 rounds   4 discarded       0 ms
+  230  GAVE UP    4 rounds   4 discarded       0 ms
+  231  GAVE UP    4 rounds   4 discarded       0 ms
+  232  GAVE UP    4 rounds   4 discarded       0 ms
+  233  GAVE UP    4 rounds   4 discarded       0 ms
+  234  GAVE UP    4 rounds   4 discarded       0 ms
+  235  GAVE UP    4 rounds   4 discarded       0 ms
+  236  GAVE UP    4 rounds   4 discarded       0 ms
+  237  GAVE UP    4 rounds   4 discarded       0 ms
+  238  GAVE UP    4 rounds   4 discarded       0 ms
+  239  GAVE UP    4 rounds   4 discarded       0 ms
+  240  GAVE UP    4 rounds   4 discarded       0 ms
+  241  GAVE UP    4 rounds   4 discarded       0 ms
+  242  GAVE UP    4 rounds   4 discarded       0 ms
+  243  GAVE UP    4 rounds   4 discarded       0 ms
+  244  GAVE UP    4 rounds   4 discarded       0 ms
+  245  GAVE UP    4 rounds   4 discarded       0 ms
+  246  GAVE UP    4 rounds   4 discarded       0 ms
+  247  GAVE UP    4 rounds   4 discarded       0 ms
+  248  GAVE UP    4 rounds   4 discarded       0 ms
+  249  GAVE UP    4 rounds   4 discarded       0 ms
+  250  GAVE UP    4 rounds   4 discarded       0 ms
+  251  GAVE UP    4 rounds   4 discarded       0 ms
+  252  GAVE UP    4 rounds   4 discarded       0 ms
+  253  GAVE UP    4 rounds   4 discarded       0 ms
+  254  GAVE UP    4 rounds   4 discarded       0 ms
+  255  GAVE UP    4 rounds   4 discarded       0 ms
+  256  GAVE UP    4 rounds   4 discarded       0 ms
+  257  GAVE UP    4 rounds   4 discarded       0 ms
+  258  GAVE UP    4 rounds   4 discarded       0 ms
+  259  GAVE UP    4 rounds   4 discarded       0 ms
+  260  GAVE UP    4 rounds   4 discarded       0 ms
+  261  GAVE UP    4 rounds   4 discarded       0 ms
+  262  GAVE UP    4 rounds   4 discarded       0 ms
+  263  GAVE UP    4 rounds   4 discarded       0 ms
+  264  GAVE UP    4 rounds   4 discarded       0 ms
+  265  GAVE UP    4 rounds   4 discarded       0 ms
+  266  GAVE UP    4 rounds   4 discarded       0 ms
+  267  GAVE UP    4 rounds   4 discarded       0 ms
+  268  GAVE UP    4 rounds   4 discarded       0 ms
+  269  GAVE UP    4 rounds   4 discarded       0 ms
+  270  GAVE UP    4 rounds   4 discarded       0 ms
+  271  GAVE UP    4 rounds   4 discarded       0 ms
+  272  GAVE UP    4 rounds   4 discarded       0 ms
+  273  GAVE UP    4 rounds   4 discarded       0 ms
+  274  GAVE UP    4 rounds   4 discarded       0 ms
+  275  GAVE UP    4 rounds   4 discarded       0 ms
+  276  GAVE UP    4 rounds   4 discarded       0 ms
+  277  GAVE UP    4 rounds   4 discarded       0 ms
+  278  GAVE UP    4 rounds   4 discarded       0 ms
+  279  GAVE UP    4 rounds   4 discarded       0 ms
+  280  GAVE UP    4 rounds   4 discarded       0 ms
+  281  GAVE UP    4 rounds   4 discarded       0 ms
+  282  GAVE UP    4 rounds   4 discarded       0 ms
+  283  GAVE UP    4 rounds   4 discarded       0 ms
+  284  GAVE UP    4 rounds   4 discarded       0 ms
+  285  GAVE UP    4 rounds   4 discarded       0 ms
+  286  GAVE UP    4 rounds   4 discarded       0 ms
+  287  GAVE UP    4 rounds   4 discarded       0 ms
+  288  GAVE UP    4 rounds   4 discarded       0 ms
+  289  GAVE UP    4 rounds   4 discarded       0 ms
+  290  GAVE UP    4 rounds   4 discarded       0 ms
+  291  GAVE UP    4 rounds   4 discarded       0 ms
+  292  GAVE UP    4 rounds   4 discarded       0 ms
+  293  GAVE UP    4 rounds   4 discarded       0 ms
+  294  GAVE UP    4 rounds   4 discarded       0 ms
+  295  GAVE UP    4 rounds   4 discarded       0 ms
+  296  GAVE UP    4 rounds   4 discarded       0 ms
+  297  GAVE UP    4 rounds   4 discarded       0 ms
+  298  GAVE UP    4 rounds   4 discarded       0 ms
+  299  GAVE UP    4 rounds   4 discarded       0 ms
+  300  GAVE UP    4 rounds   4 discarded       0 ms
+
+--- headline ---
+trials                       300
+raw failure rate              59.33%  (178/300)   the first stream did not answer
+wallet-visible failure rate   29.67%  (89/300)   no stream answered
+streams opened               701
+reduction factor                2.0x
+
+--- failure rate per round, conditional on every earlier round failing ---
+round  reached  failed    rate
+    1      300     178   59.33%
+    2      178     124   69.66%
+    3      124      99   79.84%
+    4       99      89   89.90%
+
+--- latency ---
+round that answered                p50   1388 ms | p90   2893 ms | p99   8731 ms | max  23048 ms
+establishment seen by the wallet   p50   2357 ms | p90  21451 ms | p99  33474 ms | max  54135 ms
+time spent on a discarded stream   p50      0 ms | p90  10001 ms | p99  10006 ms | max 268469 ms
+
+A discarded stream costs the whole probe timeout (10s), because the failure is silent.
+The second row is what a wallet waits before its first byte moves.
+
+At this raw rate, reaching 1% would take 9 attempts if failures were independent.
