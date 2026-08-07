@@ -13,9 +13,17 @@ anyhow = "1.0.104"
 clap = { version = "4.6.5", features = ["derive", "env"] }
 # For racing several probes and taking the first to answer. Already in the SDK's tree.
 futures = "0.3.31"
+http-body-util = "0.1.4"
+# Serves the metrics and health endpoints. Already in the SDK's tree, so declaring it directly adds
+# no package to the lockfile.
+hyper = { version = "1.11.0", features = ["server", "http1"] }
+hyper-util = { version = "0.1.20", features = ["tokio"] }
 # Pinned exactly: the SDK moves fast, and the measured behaviour this project is built around belongs
 # to a specific release.
 nym-sdk = "=1.21.5-rc.3"
+# The exposition format, so its escaping and its cumulative histogram buckets are not ours to get
+# wrong. Also already in the SDK's tree, by way of nym-metrics.
+prometheus = { version = "0.14.0", default-features = false }
 thiserror = "2.0.18"
 tokio = { version = "1.52.3", features = [
     "rt-multi-thread",
