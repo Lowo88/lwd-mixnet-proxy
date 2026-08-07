@@ -77,6 +77,8 @@ ends a dead conversation.
   requests already in flight, and a request delivered twice is worse than one that failed cleanly.
 - **No gRPC parsing**, and therefore no per-method routing. Which calls are worth carrying over a
   mixnet is the wallet's decision, not this proxy's.
+- **No pool of pre-probed streams.** A stream that answered a probe a minute ago is not a stream that
+  works now, and the transport gives no way to tell the difference.
 - **No upstream connection until a request arrives.** A stream that was only probed, or one whose
   dialler kept a sibling from the same round instead, never becomes a connection to the node, and is
   let go under a deadline of its own.
@@ -90,3 +92,4 @@ ends a dead conversation.
 | [0003](decisions/0003-probe-every-stream-before-the-wallet-uses-it.md) | Probe every stream before the wallet is allowed near it |
 | [0004](decisions/0004-deadlines-are-the-only-close.md) | Deadlines are the only close |
 | [0005](decisions/0005-what-the-measurement-has-to-show.md) | What the measurement has to show, and how it is taken |
+| [0006](decisions/0006-no-pool-of-pre-probed-streams.md) | No pool of pre-probed streams |

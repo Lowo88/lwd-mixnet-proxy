@@ -12,3 +12,4 @@ records explain why it looks the way it does.
 | [0003](0003-probe-every-stream-before-the-wallet-uses-it.md) | Probe every stream before the wallet is allowed near it |
 | [0004](0004-deadlines-are-the-only-close.md) | Deadlines are the only close |
 | [0005](0005-what-the-measurement-has-to-show.md) | What the measurement has to show, and how it is taken |
+| [0006](0006-no-pool-of-pre-probed-streams.md) | No pool of pre-probed streams |
