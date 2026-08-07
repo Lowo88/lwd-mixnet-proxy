@@ -17,4 +17,5 @@
 
 pub mod dial;
 pub mod handshake;
+pub mod health;
 pub mod splice;
