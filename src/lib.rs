@@ -16,6 +16,7 @@
 //! and [replaced](dial) if it does not answer, and [torn down](splice) if it stops answering later.
 
 pub mod dial;
+pub mod endpoint;
 pub mod handshake;
 pub mod health;
 pub mod metrics;
