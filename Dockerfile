@@ -35,3 +35,13 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends ca-certificates libssl3t64 curl \
  && rm -rf /var/lib/apt/lists/*
 COPY --from=build /out/lwd-mixnet-client /out/lwd-mixnet-server /out/lwd-mixnet-bench /usr/local/bin/
+
+# Neither half needs a privilege it could lose: they bind ports above 1024 and write nothing outside
+# the state directory. The uid is fixed and documented because an operator bind-mounting a host
+# directory has to chown it to the same number.
+RUN groupadd --gid 10001 lwd \
+ && useradd --uid 10001 --gid 10001 --create-home lwd \
+ && install -d -o 10001 -g 10001 -m 700 /state
+ENV HOME=/home/lwd
+USER 10001:10001
+WORKDIR /home/lwd
