@@ -66,7 +66,45 @@ concurrent users the anonymity set is negligible. Using a different instance for
 
 ## Running
 
-Both halves need to reach the mixnet. The serving half prints the address the dialling half needs.
+Both halves need to reach the mixnet, and the order is fixed: the serving half prints the address the
+dialling half is configured with, and it only knows it once it has registered with a gateway.
+
+### With containers
+
+Both halves ship from one image. The compose file runs each as its own service and needs no edit for
+the common case; `.env` carries what changes.
+
+```
+cp .env.example .env
+
+docker compose up -d server
+docker compose logs -f server        # NYM_ADDRESS=<identity>.<encryption>@<gateway>, after ~5 s
+```
+
+Put that address in `.env` as `SERVER_ADDRESS`, and set `UPSTREAM` if the light-client server is not
+on the container host at `:9067`. Then:
+
+```
+docker compose up -d client
+```
+
+Point the wallet at `127.0.0.1:9068`. Both halves answer `/health` and are healthy once serving:
+
+```
+docker compose ps                    # both `healthy`
+curl -s localhost:9070/metrics       # the dialling half; the serving half is on 9069
+```
+
+The processes run as **uid 10001**, unprivileged. An empty named volume inherits the ownership of
+`/state` from the image, so the default compose file works as it stands. Two cases need a hand:
+
+- **A bind mount instead of the named volume** starts as whatever the host directory is owned by, and
+  the serving half cannot write to it: `chown 10001:10001` that directory first.
+- **A volume from an older image that ran as root** stays owned by root. `docker compose down -v`
+  discards it, at the cost of the identity in it: the Nym address changes and whoever wrote the old
+  one down can no longer reach this half.
+
+### As binaries
 
 ```
 # next to the server
@@ -164,8 +202,10 @@ the thing to be paged about.
 is bound before the mixnet client connects, so it can be asked about the slow, unreliable part of
 startup: registering with a gateway takes seconds and was seen to fail outright on 2 of 15 attempts.
 
-Both halves drain on `SIGINT`, letting connections in flight finish within `--shutdown-grace-secs`
-(10 by default) before closing the rest.
+Both halves drain on `SIGINT` and on `SIGTERM`, letting connections in flight finish within
+`--shutdown-grace-secs` (10 by default) before closing the rest. `SIGTERM` is what a container
+runtime sends, so the grace period has to be shorter than the runtime's own: `docker stop` escalates
+to `SIGKILL` after 10 seconds unless `-t` says otherwise.
 
 Nothing exported or logged identifies a client. The endpoint is unauthenticated, so keep it on
 loopback or a private network: it reveals that the machine runs this proxy and how busy it is.
