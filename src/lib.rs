@@ -20,4 +20,5 @@ pub mod endpoint;
 pub mod handshake;
 pub mod health;
 pub mod metrics;
+pub mod shutdown;
 pub mod splice;

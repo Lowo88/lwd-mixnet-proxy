@@ -13,6 +13,7 @@ use lwd_mixnet_proxy::endpoint;
 use lwd_mixnet_proxy::handshake;
 use lwd_mixnet_proxy::health::{Health, State};
 use lwd_mixnet_proxy::metrics::ServerMetrics;
+use lwd_mixnet_proxy::shutdown;
 use lwd_mixnet_proxy::splice::{self, Watchdog};
 use nym_sdk::mixnet::{MixnetClient, MixnetClientBuilder, MixnetStream, StoragePaths};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -143,6 +144,10 @@ async fn main() -> Result<()> {
     );
 
     let mut streams = JoinSet::new();
+    // Created once rather than per iteration: a fresh future would register the handler again on
+    // every pass through the loop.
+    let asked_to_stop = shutdown::requested();
+    tokio::pin!(asked_to_stop);
     loop {
         tokio::select! {
             accepted = listener.accept() => match accepted {
@@ -159,7 +164,7 @@ async fn main() -> Result<()> {
             // Finished streams are reaped as they end, so the set holds what is in flight rather
             // than everything this process has ever served.
             Some(_) = streams.join_next(), if !streams.is_empty() => {}
-            _ = tokio::signal::ctrl_c() => {
+            _ = &mut asked_to_stop => {
                 let _ = shutting_down.send(true);
                 drain(streams, Duration::from_secs(arguments.shutdown_grace_secs)).await;
                 return Ok(());
