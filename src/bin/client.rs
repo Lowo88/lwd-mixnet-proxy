@@ -10,10 +10,14 @@ use std::time::Duration;
 use anyhow::{Context, Result};
 use clap::Parser;
 use lwd_mixnet_proxy::dial::{self, DialSettings, ProbeSettings};
+use lwd_mixnet_proxy::endpoint;
+use lwd_mixnet_proxy::health::{Health, State};
+use lwd_mixnet_proxy::metrics::ClientMetrics;
 use lwd_mixnet_proxy::splice::{self, Watchdog};
 use nym_sdk::mixnet::{MixnetClient, Recipient};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::Mutex;
+use tokio::task::JoinSet;
 
 #[derive(Parser)]
 #[command(about = "Reach a light-client endpoint over the mixnet", version)]
@@ -62,6 +66,16 @@ struct Arguments {
     /// it is what turns a silent hang into an error the wallet's gRPC library reconnects from.
     #[arg(long, env = "LWD_MIXNET_STALL_TIMEOUT_SECS", default_value_t = 60)]
     stall_timeout_secs: u64,
+
+    /// Where to serve `/metrics` and `/health`. Unset means neither is served: this half runs on
+    /// the same machine as the wallet, so opening a port there is a decision to be made rather than
+    /// a default to be discovered.
+    #[arg(long, env = "LWD_MIXNET_METRICS_BIND")]
+    metrics_bind: Option<String>,
+
+    /// How long connections already being carried are given to finish once a shutdown is asked for.
+    #[arg(long, env = "LWD_MIXNET_SHUTDOWN_GRACE_SECS", default_value_t = 10)]
+    shutdown_grace_secs: u64,
 }
 
 #[tokio::main]
@@ -89,16 +103,46 @@ async fn main() -> Result<()> {
         idle: None,
     };
 
+    let metrics = Arc::new(ClientMetrics::new().context("building the metrics")?);
+    let health = Health::starting();
+
+    // Bound before the mixnet client connects, which takes seconds and sometimes fails: without it
+    // there is nothing to ask why startup is taking so long.
+    let observability = match &arguments.metrics_bind {
+        Some(bind) => Some((
+            TcpListener::bind(bind)
+                .await
+                .with_context(|| format!("binding the metrics endpoint on {bind}"))?,
+            bind.clone(),
+        )),
+        None => None,
+    };
+    let (shutting_down, shutdown) = tokio::sync::watch::channel(false);
+    if let Some((listener, bind)) = observability {
+        let registry = metrics.registry().clone();
+        let health = health.clone();
+        let mut shutdown = shutdown.clone();
+        tracing::info!(%bind, "serving /metrics and /health");
+        tokio::spawn(async move {
+            endpoint::serve(listener, registry, health, async move {
+                let _ = shutdown.wait_for(|asked| *asked).await;
+            })
+            .await;
+        });
+    }
+
     // Deliberately ephemeral: a stable client identity is exactly what would let a server correlate
     // one wallet's requests across sessions.
     let client = MixnetClient::connect_new()
         .await
         .context("connecting to the mixnet")?;
     let client = Arc::new(Mutex::new(client));
+    health.advance_to(State::Registered);
 
     let listener = TcpListener::bind(&arguments.bind)
         .await
         .with_context(|| format!("binding {}", arguments.bind))?;
+    health.advance_to(State::Serving);
     tracing::info!(
         bind = %arguments.bind,
         probe = !arguments.no_probe,
@@ -106,21 +150,56 @@ async fn main() -> Result<()> {
         "carrying local connections over the mixnet"
     );
 
+    let mut connections = JoinSet::new();
     loop {
         tokio::select! {
             accepted = listener.accept() => {
                 let (connection, wallet) = accepted.context("accepting a local connection")?;
                 let client = Arc::clone(&client);
-                tokio::spawn(async move {
-                    carry(connection, &client, server, dial_settings, watchdog).await;
+                let metrics = Arc::clone(&metrics);
+                connections.spawn(async move {
+                    carry(connection, &client, server, dial_settings, watchdog, &metrics).await;
                     tracing::debug!(%wallet, "local connection done");
                 });
             }
+            // Finished connections are reaped as they end, so the set holds what is in flight
+            // rather than everything this process has ever carried.
+            Some(_) = connections.join_next(), if !connections.is_empty() => {}
             _ = tokio::signal::ctrl_c() => {
-                tracing::info!("shutting down");
+                let _ = shutting_down.send(true);
+                drain(connections, Duration::from_secs(arguments.shutdown_grace_secs)).await;
                 return Ok(());
             }
         }
+    }
+}
+
+/// Let connections already in flight finish, then stop waiting.
+///
+/// A wallet's gRPC library reconnects from a closed connection, so cutting one short is recoverable
+/// rather than fatal. Waiting a little anyway is what keeps an ordinary restart from showing up as
+/// an error in someone's wallet.
+async fn drain(mut connections: JoinSet<()>, grace: Duration) {
+    if connections.is_empty() {
+        tracing::info!("shutting down");
+        return;
+    }
+
+    tracing::info!(
+        in_flight = connections.len(),
+        ?grace,
+        "shutting down, letting connections in flight finish"
+    );
+    let drained = tokio::time::timeout(grace, async {
+        while connections.join_next().await.is_some() {}
+    })
+    .await;
+
+    if drained.is_err() {
+        tracing::warn!(
+            abandoned = connections.len(),
+            "closing connections that did not finish in time"
+        );
     }
 }
 
@@ -131,10 +210,17 @@ async fn carry(
     server: Recipient,
     dial_settings: DialSettings,
     watchdog: Watchdog,
+    metrics: &ClientMetrics,
 ) {
+    let _in_flight = metrics.connection_accepted();
+
     let dialled = match dial::dial(client, server, dial_settings).await {
-        Ok(dialled) => dialled,
+        Ok(dialled) => {
+            metrics.dialled(&dialled.rounds, Some(dialled.elapsed));
+            dialled
+        }
         Err(gave_up) => {
+            metrics.dialled(&gave_up.rounds, None);
             // Dropping the connection is the point: the wallet sees a closed socket, which its gRPC
             // library knows how to retry, rather than a request that never returns.
             tracing::warn!(
@@ -156,6 +242,7 @@ async fn carry(
     }
 
     let (transfer, ended) = splice::splice(connection, dialled.stream, watchdog).await;
+    metrics.finished(&transfer, &ended);
     tracing::info!(
         sent = transfer.to_remote,
         received = transfer.from_remote,

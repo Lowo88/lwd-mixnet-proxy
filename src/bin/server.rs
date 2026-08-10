@@ -4,15 +4,20 @@
 //! light-client protocol without knowing which one it is.
 
 use std::path::PathBuf;
+use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::{Context, Result};
 use clap::Parser;
+use lwd_mixnet_proxy::endpoint;
 use lwd_mixnet_proxy::handshake;
+use lwd_mixnet_proxy::health::{Health, State};
+use lwd_mixnet_proxy::metrics::ServerMetrics;
 use lwd_mixnet_proxy::splice::{self, Watchdog};
 use nym_sdk::mixnet::{MixnetClient, MixnetClientBuilder, MixnetStream, StoragePaths};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::net::TcpStream;
+use tokio::net::{TcpListener, TcpStream};
+use tokio::task::JoinSet;
 
 /// Big enough for a gRPC client's opening burst, so the first write upstream is a single one.
 const FIRST_CHUNK: usize = 8 * 1024;
@@ -58,6 +63,18 @@ struct Arguments {
     /// timer.
     #[arg(long, env = "LWD_MIXNET_IDLE_TIMEOUT_SECS", default_value_t = 600)]
     idle_timeout_secs: u64,
+
+    /// Where to serve `/metrics` and `/health`. Unset means neither is served.
+    ///
+    /// The failure rate this half meets moves by an order of magnitude between one hour and the
+    /// next, so an operator without these has no way to tell a bad afternoon on the transport from
+    /// a deployment that is actually broken.
+    #[arg(long, env = "LWD_MIXNET_METRICS_BIND")]
+    metrics_bind: Option<String>,
+
+    /// How long streams already being carried are given to finish once a shutdown is asked for.
+    #[arg(long, env = "LWD_MIXNET_SHUTDOWN_GRACE_SECS", default_value_t = 10)]
+    shutdown_grace_secs: u64,
 }
 
 #[derive(Clone)]
@@ -66,6 +83,7 @@ struct Settings {
     handshake_timeout: Duration,
     first_request_timeout: Duration,
     idle_timeout: Duration,
+    metrics: Arc<ServerMetrics>,
 }
 
 #[tokio::main]
@@ -82,9 +100,31 @@ async fn main() -> Result<()> {
         handshake_timeout: Duration::from_secs(arguments.handshake_timeout_secs),
         first_request_timeout: Duration::from_secs(arguments.first_request_timeout_secs),
         idle_timeout: Duration::from_secs(arguments.idle_timeout_secs),
+        metrics: Arc::new(ServerMetrics::new().context("building the metrics")?),
     };
+    let health = Health::starting();
+
+    // Bound before the mixnet client connects, which takes seconds and was seen to fail outright on
+    // 2 of 15 attempts: without it there is nothing to ask why startup is taking so long.
+    let (shutting_down, shutdown) = tokio::sync::watch::channel(false);
+    if let Some(bind) = &arguments.metrics_bind {
+        let listener = TcpListener::bind(bind)
+            .await
+            .with_context(|| format!("binding the metrics endpoint on {bind}"))?;
+        let registry = settings.metrics.registry().clone();
+        let health = health.clone();
+        let mut shutdown = shutdown.clone();
+        tracing::info!(%bind, "serving /metrics and /health");
+        tokio::spawn(async move {
+            endpoint::serve(listener, registry, health, async move {
+                let _ = shutdown.wait_for(|asked| *asked).await;
+            })
+            .await;
+        });
+    }
 
     let mut client = connect(&arguments, settings.idle_timeout).await?;
+    health.advance_to(State::Registered);
 
     // Printed rather than logged so it survives whatever the log filter is set to: an operator
     // cannot configure the dialling half without it.
@@ -92,6 +132,7 @@ async fn main() -> Result<()> {
     println!("NYM_ADDRESS={address}");
 
     let mut listener = client.listener().context("taking the stream listener")?;
+    health.advance_to(State::Serving);
     tracing::info!(
         %address,
         upstream = %settings.upstream,
@@ -101,23 +142,57 @@ async fn main() -> Result<()> {
         "accepting mixnet streams"
     );
 
+    let mut streams = JoinSet::new();
     loop {
         tokio::select! {
             accepted = listener.accept() => match accepted {
                 Some(stream) => {
-                    let settings = settings.clone();
-                    tokio::spawn(serve(stream, settings));
+                    streams.spawn(serve(stream, settings.clone()));
                 }
                 None => {
                     tracing::warn!("the mixnet listener closed");
+                    let _ = shutting_down.send(true);
+                    drain(streams, Duration::from_secs(arguments.shutdown_grace_secs)).await;
                     return Ok(());
                 }
             },
+            // Finished streams are reaped as they end, so the set holds what is in flight rather
+            // than everything this process has ever served.
+            Some(_) = streams.join_next(), if !streams.is_empty() => {}
             _ = tokio::signal::ctrl_c() => {
-                tracing::info!("shutting down");
+                let _ = shutting_down.send(true);
+                drain(streams, Duration::from_secs(arguments.shutdown_grace_secs)).await;
                 return Ok(());
             }
         }
+    }
+}
+
+/// Let streams already in flight finish, then stop waiting.
+///
+/// A dialler recovers from a closed connection, so cutting one short is recoverable rather than
+/// fatal. Waiting a little anyway is what keeps an ordinary restart from reaching a wallet.
+async fn drain(mut streams: JoinSet<()>, grace: Duration) {
+    if streams.is_empty() {
+        tracing::info!("shutting down");
+        return;
+    }
+
+    tracing::info!(
+        in_flight = streams.len(),
+        ?grace,
+        "shutting down, letting streams in flight finish"
+    );
+    let drained = tokio::time::timeout(grace, async {
+        while streams.join_next().await.is_some() {}
+    })
+    .await;
+
+    if drained.is_err() {
+        tracing::warn!(
+            abandoned = streams.len(),
+            "closing streams that did not finish in time"
+        );
     }
 }
 
@@ -154,9 +229,11 @@ async fn serve(mut stream: MixnetStream, settings: Settings) {
     let stream_id = stream.id();
 
     if let Err(error) = handshake::accept(&mut stream, settings.handshake_timeout).await {
+        settings.metrics.stream_rejected(&error);
         tracing::debug!(%stream_id, %error, "dropping a stream that never introduced itself");
         return;
     }
+    settings.metrics.stream_accepted();
 
     // The upstream is not touched until the dialler sends something to send it. A stream that was
     // only probed, or one whose dialler kept a sibling instead, therefore never becomes a connection
@@ -166,11 +243,13 @@ async fn serve(mut stream: MixnetStream, settings: Settings) {
         .await
     {
         Ok(Ok(0)) | Err(_) => {
+            settings.metrics.stream_without_request();
             tracing::debug!(%stream_id, "letting go of a stream that carried no request");
             return;
         }
         Ok(Ok(read)) => read,
         Ok(Err(error)) => {
+            settings.metrics.stream_without_request();
             tracing::debug!(%stream_id, %error, "reading the first request failed");
             return;
         }
@@ -179,10 +258,12 @@ async fn serve(mut stream: MixnetStream, settings: Settings) {
     let mut upstream = match TcpStream::connect(&settings.upstream).await {
         Ok(connection) => connection,
         Err(error) => {
+            settings.metrics.upstream_unreachable();
             tracing::error!(%stream_id, %error, upstream = %settings.upstream, "upstream unreachable");
             return;
         }
     };
+    let _in_flight = settings.metrics.upstream_connected();
     if let Err(error) = upstream.write_all(&opening[..read]).await {
         tracing::warn!(%stream_id, %error, "writing the first request upstream failed");
         return;
@@ -195,6 +276,7 @@ async fn serve(mut stream: MixnetStream, settings: Settings) {
         idle: Some(settings.idle_timeout),
     };
     let (transfer, ended) = splice::splice(upstream, stream, watchdog).await;
+    settings.metrics.finished(&transfer, &ended);
     tracing::info!(
         %stream_id,
         from_client = transfer.from_remote + read as u64,
