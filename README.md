@@ -90,6 +90,52 @@ Every flag has an environment variable, listed in `--help`. The ones that matter
 | `--stall-timeout-secs` | How long the wallet waits on an answer that is not coming before the connection is closed. |
 | `--metrics-bind` | Where to serve `/metrics` and `/health`. No default on either half: see below. |
 
+### All of it
+
+Every setting is a flag with a matching environment variable, and the flag wins. There is no
+configuration file: everything here is a scalar, and a file would mostly add a precedence order to get
+wrong. [`.env.example`](.env.example) is a template with these names and defaults already in it.
+
+**Both halves:**
+
+| variable | flag | default |
+|---|---|---|
+| `LWD_MIXNET_METRICS_BIND` | `--metrics-bind` | unset, so nothing is served |
+| `LWD_MIXNET_SHUTDOWN_GRACE_SECS` | `--shutdown-grace-secs` | `10` |
+
+Those two names are **shared by both binaries**. Running both halves on one machine with
+`LWD_MIXNET_METRICS_BIND` exported means the second to start exits immediately with `Address already
+in use`; pass `--metrics-bind` per process instead.
+
+**`lwd-mixnet-client`:**
+
+| variable | flag | default |
+|---|---|---|
+| `LWD_MIXNET_SERVER` | `--server` | **required** |
+| `LWD_MIXNET_BIND` | `--bind` | `127.0.0.1:9068` |
+| `LWD_MIXNET_PROBE_TIMEOUT_SECS` | `--probe-timeout-secs` | `10` |
+| `LWD_MIXNET_PROBE_ATTEMPTS` | `--probe-attempts` | `4` |
+| `LWD_MIXNET_PROBE_CONCURRENCY` | `--probe-concurrency` | `3` |
+| `LWD_MIXNET_NO_PROBE` | `--no-probe` | off |
+| `LWD_MIXNET_REPLY_SURBS` | `--reply-surbs` | unset, leaving the SDK's 10 |
+| `LWD_MIXNET_STALL_TIMEOUT_SECS` | `--stall-timeout-secs` | `60` |
+
+**`lwd-mixnet-server`:**
+
+| variable | flag | default |
+|---|---|---|
+| `LWD_MIXNET_UPSTREAM` | `--upstream` | `127.0.0.1:9067` |
+| `LWD_MIXNET_STATE_DIR` | `--state-dir` | unset, so the identity is ephemeral |
+| `LWD_MIXNET_HANDSHAKE_TIMEOUT_SECS` | `--handshake-timeout-secs` | `30` |
+| `LWD_MIXNET_FIRST_REQUEST_TIMEOUT_SECS` | `--first-request-timeout-secs` | `60` |
+| `LWD_MIXNET_IDLE_TIMEOUT_SECS` | `--idle-timeout-secs` | `600` |
+
+An unset `--state-dir` means the Nym address changes on every restart, so nobody who wrote it down
+can reach this half again. Anything long-lived wants one.
+
+`RUST_LOG` sets the log filter on both. `info` is quiet; `debug` shows per-stream detail, including
+which streams the probe discarded.
+
 ### Watching it run
 
 Neither half opens a metrics port unless told to, so a deployment that sets nothing is flying blind.

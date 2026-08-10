@@ -7,3 +7,5 @@
 *.key
 .env
 .env.*
+# The template carries no values, only names and defaults, and is meant to be committed.
+!.env.example
