@@ -6,16 +6,21 @@ name: lwd-mixnet-proxy
 services:
   server:
     build: .
+    # Both services are the same image, tagged as `make image` tags it, so it is built once.
+    image: lwd-mixnet-proxy:latest
     command: ["lwd-mixnet-server"]
     environment:
-      # The upstream runs on the host, not in this network.
-      LWD_MIXNET_UPSTREAM: "host.docker.internal:9067"
+      # Defaults to the host, not this network: the usual deployment has the upstream already
+      # running next to the daemon rather than as another service here.
+      LWD_MIXNET_UPSTREAM: "${UPSTREAM:-host.docker.internal:9067}"
       LWD_MIXNET_STATE_DIR: "/state"
       LWD_MIXNET_METRICS_BIND: "0.0.0.0:9069"
       RUST_LOG: "${RUST_LOG:-info}"
     volumes:
       # Holds the client identity, which is a private key directory: lose it and the address
-      # changes, copy it and this half can be impersonated.
+      # changes, copy it and this half can be impersonated. An empty named volume inherits the
+      # ownership of /state in the image, so the unprivileged uid can write to it. A volume left
+      # over from an image that ran as root does not: see README.md.
       - server-state:/state
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -34,6 +39,7 @@ services:
 
   client:
     build: .
+    image: lwd-mixnet-proxy:latest
     command: ["lwd-mixnet-client"]
     environment:
       # Left empty rather than made mandatory here, so `docker compose build` works before the
