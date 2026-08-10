@@ -11,6 +11,7 @@ services:
       # The upstream runs on the host, not in this network.
       LWD_MIXNET_UPSTREAM: "host.docker.internal:9067"
       LWD_MIXNET_STATE_DIR: "/state"
+      LWD_MIXNET_METRICS_BIND: "0.0.0.0:9069"
       RUST_LOG: "${RUST_LOG:-info}"
     volumes:
       # Holds the client identity, which is a private key directory: lose it and the address
@@ -18,6 +19,18 @@ services:
       - server-state:/state
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    ports:
+      # Loopback only: the endpoint is unauthenticated.
+      - "127.0.0.1:${SERVER_METRICS_PORT:-9069}:9069"
+    # Registering with a gateway takes seconds and was seen to fail outright on 2 of 15 attempts, so
+    # the grace period is generous and a failure here means the half really is not serving.
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:9069/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 90s
+    restart: unless-stopped
 
   client:
     build: .
@@ -27,10 +40,19 @@ services:
       # serving half has ever run and printed an address.
       LWD_MIXNET_SERVER: "${SERVER_ADDRESS:-}"
       LWD_MIXNET_BIND: "0.0.0.0:9068"
+      LWD_MIXNET_METRICS_BIND: "0.0.0.0:9069"
       RUST_LOG: "${RUST_LOG:-info}"
     ports:
       # Bound to loopback on the host: this port is an unauthenticated door to the upstream.
       - "127.0.0.1:${CLIENT_HOST_PORT:-9068}:9068"
+      - "127.0.0.1:${CLIENT_METRICS_PORT:-9070}:9069"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:9069/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 90s
+    restart: unless-stopped
 
 volumes:
   server-state:

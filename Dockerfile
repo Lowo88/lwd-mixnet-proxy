@@ -29,7 +29,9 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
 # Must match the build image's distro: rust:1.96-slim is Debian 13 (glibc 2.41), and a bookworm
 # runtime rejects the binary with a GLIBC_2.38 error.
 FROM debian:trixie-slim
+# curl is here for the container health check and nothing else: the health endpoint is HTTP, and this
+# image has no other way to speak it.
 RUN apt-get update \
- && apt-get install -y --no-install-recommends ca-certificates libssl3t64 \
+ && apt-get install -y --no-install-recommends ca-certificates libssl3t64 curl \
  && rm -rf /var/lib/apt/lists/*
 COPY --from=build /out/lwd-mixnet-client /out/lwd-mixnet-server /out/lwd-mixnet-bench /usr/local/bin/
