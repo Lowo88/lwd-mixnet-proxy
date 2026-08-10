@@ -13,3 +13,4 @@ records explain why it looks the way it does.
 | [0004](0004-deadlines-are-the-only-close.md) | Deadlines are the only close |
 | [0005](0005-what-the-measurement-has-to-show.md) | What the measurement has to show, and how it is taken |
 | [0006](0006-no-pool-of-pre-probed-streams.md) | No pool of pre-probed streams |
+| [0007](0007-report-a-pair-of-rates-over-an-endpoint-that-is-off-by-default.md) | Report a pair of rates, over an endpoint that is off by default |

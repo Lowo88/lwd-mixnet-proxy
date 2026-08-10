@@ -71,6 +71,33 @@ into a reconnect. **Idle** means nothing has moved at all, which the listening h
 streams whose dialler is gone. The transport carries no close, so these timers are the only thing that
 ends a dead conversation.
 
+**`metrics`** holds what each half counts. The number that matters is a **pair**: how often a freshly
+opened round of streams goes unanswered, against how often the wallet is left with nothing. Both come
+from the same dial, which is what makes them comparable on a transport whose rate moves by an order of
+magnitude between one hour and the next. One rising without the other is a bad afternoon being
+absorbed; both rising together is this proxy failing.
+
+**`health`** is the three states a half moves through: `starting`, `registered`, `serving`. Startup is
+neither instant nor reliable, so a binary up/down cannot tell "still registering" from "registered and
+broken".
+
+**`endpoint`** serves both over HTTP, on a port that is only opened when one is configured.
+
+## Observability
+
+Both halves take `--metrics-bind`, and neither has a default: the dialling half runs on a wallet's
+machine, and the listening half is someone's server. Where one is given, `/metrics` carries the
+Prometheus exposition format and `/health` a small JSON body, answering 200 only once the half is
+serving. That port is bound **before** the mixnet client connects, because connecting is the slow and
+failure-prone part of startup and is exactly when someone wants to ask what is happening.
+
+Nothing exported or logged identifies a client: the counters count streams and connections, and the
+stream identifiers that appear in logs are random per stream. The endpoint is unauthenticated and
+belongs on loopback or a private network.
+
+Both halves drain on `SIGINT`, letting connections already in flight finish within
+`--shutdown-grace-secs` before closing what remains.
+
 ## What is deliberately not here
 
 - **No retry once bytes are moving.** Resuming would mean rebuilding HTTP/2 state and replaying
@@ -93,3 +120,4 @@ ends a dead conversation.
 | [0004](decisions/0004-deadlines-are-the-only-close.md) | Deadlines are the only close |
 | [0005](decisions/0005-what-the-measurement-has-to-show.md) | What the measurement has to show, and how it is taken |
 | [0006](decisions/0006-no-pool-of-pre-probed-streams.md) | No pool of pre-probed streams |
+| [0007](decisions/0007-report-a-pair-of-rates-over-an-endpoint-that-is-off-by-default.md) | Report a pair of rates, over an endpoint that is off by default |

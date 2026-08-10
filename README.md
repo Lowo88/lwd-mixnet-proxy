@@ -16,8 +16,7 @@ implementation of the light-client protocol.
 
 > **Status: early.** The core mechanism is implemented, unit-tested, and measured against the live
 > mixnet: under a 34.67% per-stream failure rate it reduced what a wallet sees to 0 of 300
-> connections, with a 6.3 s p99 to establish. That is one afternoon on one network path, and the
-> operational surface around it (metrics, health checks, packaging) is not built yet.
+> connections, with a 6.3 s p99 to establish. That is one afternoon on one network path.
 
 ## Why
 
@@ -89,6 +88,41 @@ Every flag has an environment variable, listed in `--help`. The ones that matter
 | `--probe-concurrency` | Streams opened at once, three by default. One retries in series and pays a deadline per failure; three keeps the tail short at the cost of three streams and three reply-block budgets per connection. |
 | `--reply-surbs` | Raising it lowers the failure rate without reaching zero, and costs latency. A knob, not a fix. |
 | `--stall-timeout-secs` | How long the wallet waits on an answer that is not coming before the connection is closed. |
+| `--metrics-bind` | Where to serve `/metrics` and `/health`. No default on either half: see below. |
+
+### Watching it run
+
+Neither half opens a metrics port unless told to, so a deployment that sets nothing is flying blind.
+On this transport that is worse than it sounds, and the reason is the next paragraph.
+
+```
+lwd-mixnet-server --upstream 127.0.0.1:9067 --metrics-bind 127.0.0.1:9069
+curl -s localhost:9069/metrics
+curl -s localhost:9069/health     # {"state":"serving"}, 200 only once it is
+```
+
+**Read two numbers, never one.** The transport's own failure rate moved between 2% and 51% across
+three days, so any single rate mostly records which afternoon it was measured on. What separates a bad
+afternoon from a broken deployment is the pair, both taken from the same dial:
+
+```
+lwd_mixnet_client_first_round_failures_total     / lwd_mixnet_client_connections_total
+lwd_mixnet_client_connections_unestablished_total / lwd_mixnet_client_connections_total
+```
+
+The first is the transport. The second is what a wallet actually experiences, and is what this proxy
+exists to keep near zero. The first rising alone is retry earning its keep; both rising together is
+the thing to be paged about.
+
+`/health` reports `starting`, `registered` or `serving`, and answers 200 only for the last. The port
+is bound before the mixnet client connects, so it can be asked about the slow, unreliable part of
+startup: registering with a gateway takes seconds and was seen to fail outright on 2 of 15 attempts.
+
+Both halves drain on `SIGINT`, letting connections in flight finish within `--shutdown-grace-secs`
+(10 by default) before closing the rest.
+
+Nothing exported or logged identifies a client. The endpoint is unauthenticated, so keep it on
+loopback or a private network: it reveals that the machine runs this proxy and how busy it is.
 
 ### The state directory is private key material
 
