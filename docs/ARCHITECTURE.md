@@ -83,6 +83,9 @@ broken".
 
 **`endpoint`** serves both over HTTP, on a port that is only opened when one is configured.
 
+**`shutdown`** waits for either signal a stop can arrive as, which is what makes the drain below
+reachable from a container at all.
+
 ## Observability
 
 Both halves take `--metrics-bind`, and neither has a default: the dialling half runs on a wallet's
@@ -95,8 +98,10 @@ Nothing exported or logged identifies a client: the counters count streams and c
 stream identifiers that appear in logs are random per stream. The endpoint is unauthenticated and
 belongs on loopback or a private network.
 
-Both halves drain on `SIGINT`, letting connections already in flight finish within
-`--shutdown-grace-secs` before closing what remains.
+Both halves drain on `SIGINT` and on `SIGTERM`, letting connections already in flight finish within
+`--shutdown-grace-secs` before closing what remains. Both, because the target deployment is a
+container and a runtime asks with `SIGTERM`: listening for an interrupt alone means the grace period
+is never reached, and every stop is a kill.
 
 ## What is deliberately not here
 
@@ -121,3 +126,4 @@ Both halves drain on `SIGINT`, letting connections already in flight finish with
 | [0005](decisions/0005-what-the-measurement-has-to-show.md) | What the measurement has to show, and how it is taken |
 | [0006](decisions/0006-no-pool-of-pre-probed-streams.md) | No pool of pre-probed streams |
 | [0007](decisions/0007-report-a-pair-of-rates-over-an-endpoint-that-is-off-by-default.md) | Report a pair of rates, over an endpoint that is off by default |
+| [0008](decisions/0008-run-as-a-fixed-unprivileged-uid.md) | Run as a fixed unprivileged uid |
