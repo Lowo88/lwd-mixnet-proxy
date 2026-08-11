@@ -1,0 +1,19 @@
+# Advisories known to be present in the pinned dependency tree (ADR 0002: the
+# SDK is pinned exactly; ADR 0009: how this list is maintained). Every entry
+# is transitive via nym-sdk and has no patched release reachable from the pin.
+# Re-evaluate the whole list at every SDK bump: delete entries that no longer
+# apply and justify any that remain.
+[advisories]
+ignore = [
+    "RUSTSEC-2026-0209", # libcrux-aesgcm: AAD length limit
+    "RUSTSEC-2026-0211", # libcrux-aesgcm: non-constant-time tag check
+    "RUSTSEC-2026-0124", # libcrux-chacha20poly1305: panic on overlong buffer
+    "RUSTSEC-2026-0125", # libcrux-ml-dsa: AVX2 verification edge case
+    "RUSTSEC-2026-0212", # libcrux-secrets: aarch64 constant-time swap/select
+    "RUSTSEC-2026-0207", # libcrux-sha3: incremental SHAKE output
+    "RUSTSEC-2026-0208", # libcrux-sha3: panic in AVX2 SHAKE-256
+    "RUSTSEC-2023-0071", # rsa: Marvin timing sidechannel
+    "RUSTSEC-2026-0104", # rustls-webpki: panic in CRL parsing
+    "RUSTSEC-2026-0098", # rustls-webpki: URI name constraints
+    "RUSTSEC-2026-0099", # rustls-webpki: wildcard name constraints
+]
