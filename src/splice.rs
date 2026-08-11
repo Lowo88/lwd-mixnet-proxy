@@ -10,6 +10,8 @@
 //! - **stalled**: the far side was written to and has answered nothing since. This is a request
 //!   without a response, and it is what the dialling half watches for: closing the local connection
 //!   turns an invisible hang into an ordinary error the wallet's own gRPC library reconnects from.
+//!   The clock runs from the oldest unanswered write, so a wallet that keeps talking into a dead
+//!   stream — keepalive pings, say — cannot postpone the discovery.
 //! - **idle**: nothing has moved in either direction. An idle connection is legitimate, so this is a
 //!   reaper rather than a failure detector: it is what the listening half uses to let go of streams
 //!   whose dialler is gone.
@@ -29,7 +31,8 @@ const COPY_BUFFER: usize = 8 * 1024;
 /// How long a splice may go without the far side answering, and without moving at all.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Watchdog {
-    /// Give up when the far side was sent bytes and has answered nothing for this long.
+    /// Give up when the far side was sent bytes and has answered nothing for this long, counted
+    /// from the first write of the unanswered run rather than the latest one.
     pub stall: Option<Duration>,
     /// Give up when nothing has moved in either direction for this long.
     pub idle: Option<Duration>,
@@ -88,13 +91,14 @@ where
 
     let period = watchdog.check_period();
     let mut ticker = tokio::time::interval_at(Instant::now() + period, period);
+    let mut stall_clock = StallClock::default();
 
     loop {
         tokio::select! {
             result = &mut outbound => return (activity.transfer(), ended(result)),
             result = &mut inbound => return (activity.transfer(), ended(result)),
             _ = ticker.tick() => {
-                if let Some(reason) = watchdog.tripped(&activity, started) {
+                if let Some(reason) = watchdog.tripped(&mut stall_clock, &activity, started) {
                     return (activity.transfer(), reason);
                 }
             }
@@ -102,8 +106,19 @@ where
     }
 }
 
+/// When the current unanswered period began, if one is running.
+#[derive(Default)]
+struct StallClock {
+    since_millis: Option<u64>,
+}
+
 impl Watchdog {
-    fn tripped(&self, activity: &Activity, started: Instant) -> Option<Ended> {
+    fn tripped(
+        &self,
+        clock: &mut StallClock,
+        activity: &Activity,
+        started: Instant,
+    ) -> Option<Ended> {
         // Read before the timestamps, so bytes landing in between make the subtractions below
         // saturate to zero rather than wrap: a deadline that has not been reached must never look
         // like one that has.
@@ -112,12 +127,19 @@ impl Watchdog {
         let heard = activity.from_remote.moved_at();
 
         // A request is outstanding when the far side was written to and has said nothing since.
-        if let Some(stall) = self.stall
-            && let Some(wrote) = wrote
-            && heard.is_none_or(|heard| heard < wrote)
-            && now.saturating_sub(wrote) >= as_millis(stall)
-        {
-            return Some(Ended::Stalled(stall));
+        match wrote.filter(|wrote| heard.is_none_or(|heard| heard < *wrote)) {
+            // Seeded once and then left alone: writes that follow are more of the same unanswered
+            // conversation, and letting them move the start would hand a chatty wallet the power to
+            // postpone the deadline indefinitely.
+            Some(wrote) => {
+                let since = *clock.since_millis.get_or_insert(wrote);
+                if let Some(stall) = self.stall
+                    && now.saturating_sub(since) >= as_millis(stall)
+                {
+                    return Some(Ended::Stalled(stall));
+                }
+            }
+            None => clock.since_millis = None,
         }
         // Nothing having moved at all counts from the beginning of the splice.
         if let Some(idle) = self.idle
@@ -272,6 +294,34 @@ mod tests {
     }
 
     #[tokio::test(start_paused = true)]
+    async fn a_wallet_that_keeps_writing_does_not_postpone_the_stall_deadline() {
+        let (mut wallet, local) = tokio::io::duplex(COPY_BUFFER);
+        tokio::spawn(async move {
+            // Keepalive pings on a dead stream: each lands well inside the deadline, so a clock
+            // restarted by every write would never reach it.
+            loop {
+                if wallet.write_all(b"ping").await.is_err() {
+                    return;
+                }
+                tokio::time::sleep(Duration::from_secs(10)).await;
+            }
+        });
+
+        let watchdog = Watchdog {
+            stall: Some(Duration::from_secs(30)),
+            idle: None,
+        };
+        let started = Instant::now();
+        let (_, ended) = splice_expecting_a_deadline(local, deaf_peer(), watchdog).await;
+
+        assert!(
+            matches!(ended, Ended::Stalled(_)) && started.elapsed() < Duration::from_secs(60),
+            "the deadline should fire near 30 s regardless of further writes: {ended:?} after {:?}",
+            started.elapsed()
+        );
+    }
+
+    #[tokio::test(start_paused = true)]
     async fn an_answer_clears_the_stall_deadline() {
         let (mut wallet, local) = tokio::io::duplex(COPY_BUFFER);
         let (mut server, remote) = tokio::io::duplex(COPY_BUFFER);
@@ -293,6 +343,44 @@ mod tests {
         assert!(
             matches!(ended, Ended::Idle(_)) && transfer.from_remote == 9,
             "an answered request should idle out, not stall: {ended:?}"
+        );
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn a_second_request_after_an_answer_gets_a_fresh_stall_window() {
+        let (mut wallet, local) = tokio::io::duplex(COPY_BUFFER);
+        let (mut server, remote) = tokio::io::duplex(COPY_BUFFER);
+        let driver = tokio::spawn(async move {
+            wallet.write_all(b"first").await.unwrap();
+            let mut answer = [0u8; 6];
+            wallet.read_exact(&mut answer).await.unwrap();
+            tokio::time::sleep(Duration::from_secs(100)).await;
+            wallet.write_all(b"second").await.unwrap();
+            std::future::pending::<()>().await;
+        });
+        tokio::spawn(async move {
+            let mut request = [0u8; 5];
+            server.read_exact(&mut request).await.unwrap();
+            server.write_all(b"answer").await.unwrap();
+            let mut second = [0u8; 6];
+            let _ = server.read_exact(&mut second).await;
+            std::future::pending::<()>().await;
+        });
+
+        let watchdog = Watchdog {
+            stall: Some(Duration::from_secs(30)),
+            idle: None,
+        };
+        let started = Instant::now();
+        let (_, ended) = splice_expecting_a_deadline(local, remote, watchdog).await;
+        driver.abort();
+
+        assert!(
+            matches!(ended, Ended::Stalled(_))
+                && started.elapsed() > Duration::from_secs(100)
+                && started.elapsed() < Duration::from_secs(160),
+            "the second request should stall ~30 s after it was sent: {ended:?} after {:?}",
+            started.elapsed()
         );
     }
 
@@ -377,6 +465,10 @@ mod tests {
             idle: Some(Duration::from_secs(600)),
         };
 
-        assert!(watchdog.tripped(&activity, started).is_none());
+        assert!(
+            watchdog
+                .tripped(&mut StallClock::default(), &activity, started)
+                .is_none()
+        );
     }
 }
