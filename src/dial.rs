@@ -277,4 +277,132 @@ impl GaveUp {
     pub fn attempts(&self) -> usize {
         self.rounds.iter().map(Round::attempted).sum()
     }
+
+    /// Whether the SDK refused every open, so no stream ever existed.
+    ///
+    /// This is the local client failing rather than the transport: a healthy client on a bad network
+    /// still opens streams, and it is their probes that go unanswered.
+    pub fn nothing_opened(&self) -> bool {
+        self.rounds.iter().all(|round| round.opened == 0)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn probe_failure() -> Discarded {
+        Discarded {
+            elapsed: Duration::from_secs(10),
+            error: HandshakeError::TimedOut(Duration::from_secs(10)).into(),
+        }
+    }
+
+    fn refused_open() -> Discarded {
+        Discarded {
+            elapsed: Duration::ZERO,
+            error: nym_sdk::Error::IoError(std::io::Error::other("the client refused")).into(),
+        }
+    }
+
+    #[test]
+    fn an_answered_round_counts_the_streams_left_without_a_verdict() {
+        let round = Round {
+            opened: 3,
+            discarded: vec![probe_failure()],
+            answered: true,
+        };
+
+        assert_eq!(
+            (round.attempted(), round.unanswered(), round.cancelled()),
+            (3, 1, 1)
+        );
+    }
+
+    #[test]
+    fn an_unanswered_round_cancels_nothing() {
+        let round = Round {
+            opened: 3,
+            discarded: vec![probe_failure(), probe_failure(), probe_failure()],
+            answered: false,
+        };
+
+        assert_eq!(
+            (round.attempted(), round.unanswered(), round.cancelled()),
+            (3, 3, 0)
+        );
+    }
+
+    #[test]
+    fn a_refused_open_is_an_attempt_that_never_became_a_stream() {
+        let round = Round {
+            opened: 0,
+            discarded: vec![refused_open()],
+            answered: false,
+        };
+
+        assert_eq!(
+            (round.attempted(), round.unanswered(), round.cancelled()),
+            (1, 0, 0)
+        );
+    }
+
+    #[test]
+    fn giving_up_reports_the_last_error_and_every_attempt() {
+        let gave_up = GaveUp {
+            rounds: vec![
+                Round {
+                    opened: 1,
+                    discarded: vec![probe_failure()],
+                    answered: false,
+                },
+                Round {
+                    opened: 0,
+                    discarded: vec![refused_open()],
+                    answered: false,
+                },
+            ],
+        };
+
+        assert_eq!(
+            (
+                gave_up.attempts(),
+                gave_up.last_error().map(DialError::is_open_failure)
+            ),
+            (2, Some(true))
+        );
+    }
+
+    #[test]
+    fn giving_up_with_streams_opened_is_the_transport_failing_and_not_the_client() {
+        let gave_up = GaveUp {
+            rounds: vec![Round {
+                opened: 3,
+                discarded: vec![probe_failure(), probe_failure(), probe_failure()],
+                answered: false,
+            }],
+        };
+
+        assert!(!gave_up.nothing_opened());
+    }
+
+    #[test]
+    fn giving_up_without_ever_opening_a_stream_is_the_local_client_failing() {
+        let gave_up = GaveUp {
+            rounds: vec![
+                Round {
+                    opened: 0,
+                    discarded: vec![refused_open()],
+                    answered: false,
+                },
+                Round {
+                    opened: 0,
+                    discarded: vec![refused_open()],
+                    answered: false,
+                },
+            ],
+        };
+
+        assert!(gave_up.nothing_opened());
+    }
 }
