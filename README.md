@@ -185,6 +185,7 @@ in use`; pass `--metrics-bind` per process instead.
 | `LWD_MIXNET_HANDSHAKE_TIMEOUT_SECS` | `--handshake-timeout-secs` | `30` |
 | `LWD_MIXNET_FIRST_REQUEST_TIMEOUT_SECS` | `--first-request-timeout-secs` | `60` |
 | `LWD_MIXNET_IDLE_TIMEOUT_SECS` | `--idle-timeout-secs` | `600` |
+| `LWD_MIXNET_MAX_STREAMS` | `--max-streams` | `256` |
 
 An unset `--state-dir` means the Nym address changes on every restart, so nobody who wrote it down
 can reach this half again. Anything long-lived wants one.
