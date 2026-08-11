@@ -167,7 +167,18 @@ async fn main() -> Result<()> {
     loop {
         tokio::select! {
             accepted = listener.accept() => {
-                let (connection, wallet) = accepted.context("accepting a local connection")?;
+                let (connection, wallet) = match accepted {
+                    Ok(accepted) => accepted,
+                    // Accept fails for passing reasons — fd pressure, a connection aborted before
+                    // it was picked up — and the wallet comes back. Dropping every connection in
+                    // flight over one of them is the only wrong answer. The pause is what stops fd
+                    // exhaustion from spinning this loop hot.
+                    Err(error) => {
+                        tracing::warn!(%error, "a local connection was not accepted");
+                        tokio::time::sleep(Duration::from_millis(100)).await;
+                        continue;
+                    }
+                };
                 let client = Arc::clone(&client);
                 let metrics = Arc::clone(&metrics);
                 let refusal_streak = Arc::clone(&refusal_streak);
