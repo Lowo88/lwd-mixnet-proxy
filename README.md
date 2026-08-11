@@ -88,6 +88,22 @@ on the container host at `:9067`. Then:
 docker compose up -d client
 ```
 
+If the light-client server is itself a container, the serving half can join its network and reach it
+by service name, so nothing has to be published to the host at all:
+
+```yaml
+services:
+  server:
+    environment:
+      LWD_MIXNET_UPSTREAM: "lwd-rs-testnet:9070"
+    networks: [upstream]
+
+networks:
+  upstream:
+    name: <that stack's network>
+    external: true
+```
+
 Point the wallet at `127.0.0.1:9068`. Both halves answer `/health` and are healthy once serving:
 
 ```
