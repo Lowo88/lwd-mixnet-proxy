@@ -15,3 +15,4 @@ records explain why it looks the way it does.
 | [0006](0006-no-pool-of-pre-probed-streams.md) | No pool of pre-probed streams |
 | [0007](0007-report-a-pair-of-rates-over-an-endpoint-that-is-off-by-default.md) | Report a pair of rates, over an endpoint that is off by default |
 | [0008](0008-run-as-a-fixed-unprivileged-uid.md) | Run as a fixed unprivileged uid |
+| [0009](0009-watch-advisories-against-a-pinned-tree.md) | Watch advisories against a pinned tree |
