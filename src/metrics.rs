@@ -266,6 +266,13 @@ impl ServerMetrics {
             .inc();
     }
 
+    /// A stream let go before its handshake was even read, because the cap was already full.
+    pub fn stream_dropped_over_capacity(&self) {
+        self.streams_rejected
+            .with_label_values(&["over_capacity"])
+            .inc();
+    }
+
     pub fn stream_without_request(&self) {
         self.streams_without_request.inc();
     }
@@ -456,6 +463,17 @@ mod tests {
             encoded.contains("lwd_mixnet_client_connections_ended_total{reason=\"stalled\"} 1"),
             "{encoded}"
         );
+    }
+
+    #[test]
+    fn a_stream_shed_at_the_cap_is_told_apart_from_one_that_failed_its_handshake() {
+        let metrics = ServerMetrics::new().unwrap();
+        metrics.stream_dropped_over_capacity();
+
+        let encoded = encode(metrics.registry()).unwrap();
+        let expected = "lwd_mixnet_server_streams_rejected_total{reason=\"over_capacity\"} 1";
+
+        assert!(encoded.contains(expected), "{encoded}");
     }
 
     #[test]

@@ -3,6 +3,7 @@
 //! The upstream is whatever the operator points it at, so this serves any implementation of the
 //! light-client protocol without knowing which one it is.
 
+use std::num::NonZeroUsize;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
@@ -64,6 +65,16 @@ struct Arguments {
     /// timer.
     #[arg(long, env = "LWD_MIXNET_IDLE_TIMEOUT_SECS", default_value_t = 600)]
     idle_timeout_secs: u64,
+
+    /// How many streams may be held at once. Each one costs a task, and each that gets as far as a
+    /// request costs a connection to the upstream too.
+    ///
+    /// This transport carries no address to rate-limit and no identity to ban, so a flooder cannot
+    /// be told apart from a crowd: a cap on how much can be held at once is the only control this
+    /// half has. Streams arriving above it are dropped unread, and their dialler learns that the
+    /// way it learns everything here, by its own deadline.
+    #[arg(long, env = "LWD_MIXNET_MAX_STREAMS", default_value = "256")]
+    max_streams: NonZeroUsize,
 
     /// Where to serve `/metrics` and `/health`. Unset means neither is served.
     ///
@@ -144,6 +155,7 @@ async fn main() -> Result<()> {
     );
 
     let mut streams = JoinSet::new();
+    let capacity = Arc::new(tokio::sync::Semaphore::new(arguments.max_streams.get()));
     // Created once rather than per iteration: a fresh future would register the handler again on
     // every pass through the loop.
     let asked_to_stop = shutdown::requested();
@@ -151,9 +163,23 @@ async fn main() -> Result<()> {
     loop {
         tokio::select! {
             accepted = listener.accept() => match accepted {
-                Some(stream) => {
-                    streams.spawn(serve(stream, settings.clone()));
-                }
+                Some(stream) => match Arc::clone(&capacity).try_acquire_owned() {
+                    Ok(permit) => {
+                        let settings = settings.clone();
+                        streams.spawn(async move {
+                            // Named so the block captures it: the permit has to outlive the stream
+                            // rather than this arm.
+                            let _permit = permit;
+                            serve(stream, settings).await;
+                        });
+                    }
+                    // Dropping the stream deregisters it, and the dialler finds out by its own
+                    // deadline. Nothing here may await: this arm holds up the whole loop.
+                    Err(_) => {
+                        settings.metrics.stream_dropped_over_capacity();
+                        tracing::warn!("dropping a stream over the concurrent-stream cap");
+                    }
+                },
                 None => {
                     tracing::warn!("the mixnet listener closed");
                     let _ = shutting_down.send(true);
