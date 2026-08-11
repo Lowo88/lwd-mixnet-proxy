@@ -128,3 +128,4 @@ is never reached, and every stop is a kill.
 | [0007](decisions/0007-report-a-pair-of-rates-over-an-endpoint-that-is-off-by-default.md) | Report a pair of rates, over an endpoint that is off by default |
 | [0008](decisions/0008-run-as-a-fixed-unprivileged-uid.md) | Run as a fixed unprivileged uid |
 | [0009](decisions/0009-watch-advisories-against-a-pinned-tree.md) | Watch advisories against a pinned tree |
+| [0010](decisions/0010-exit-when-the-local-client-degrades.md) | Exit when the local client degrades |

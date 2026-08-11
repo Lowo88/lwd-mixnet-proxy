@@ -225,6 +225,10 @@ Both halves drain on `SIGINT` and on `SIGTERM`, letting connections in flight fi
 runtime sends, so the grace period has to be shorter than the runtime's own: `docker stop` escalates
 to `SIGKILL` after 10 seconds unless `-t` says otherwise.
 
+The dialling half also exits with an error when its local mixnet client refuses every stream open
+for several connections in a row, since a restart is the only thing known to bring one back — run it
+under something that restarts it, as the compose file does.
+
 Nothing exported or logged identifies a client. The endpoint is unauthenticated, so keep it on
 loopback or a private network: it reveals that the machine runs this proxy and how busy it is.
 

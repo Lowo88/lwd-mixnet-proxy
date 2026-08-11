@@ -16,3 +16,4 @@ records explain why it looks the way it does.
 | [0007](0007-report-a-pair-of-rates-over-an-endpoint-that-is-off-by-default.md) | Report a pair of rates, over an endpoint that is off by default |
 | [0008](0008-run-as-a-fixed-unprivileged-uid.md) | Run as a fixed unprivileged uid |
 | [0009](0009-watch-advisories-against-a-pinned-tree.md) | Watch advisories against a pinned tree |
+| [0010](0010-exit-when-the-local-client-degrades.md) | Exit when the local client degrades |
