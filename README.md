@@ -1,5 +1,7 @@
 # lwd-mixnet-proxy
 
+[![ci](https://github.com/jpgonzalezra/lwd-mixnet-proxy/actions/workflows/ci.yml/badge.svg)](https://github.com/jpgonzalezra/lwd-mixnet-proxy/actions/workflows/ci.yml)
+
 Carry a Zcash light wallet's gRPC connection over the [Nym](https://nym.com) mixnet, without changing
 the wallet or the server.
 
