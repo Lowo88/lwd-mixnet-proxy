@@ -5,6 +5,7 @@
 
 use std::num::NonZeroU32;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 
 use anyhow::{Context, Result};
@@ -17,8 +18,12 @@ use lwd_mixnet_proxy::shutdown;
 use lwd_mixnet_proxy::splice::{self, Watchdog};
 use nym_sdk::mixnet::{MixnetClient, Recipient};
 use tokio::net::{TcpListener, TcpStream};
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, Notify};
 use tokio::task::JoinSet;
+
+/// Consecutive wallet connections that open no stream at all before the process gives up. Enough
+/// to rule out a blip, and a client this far gone refuses instantly, so five cost milliseconds.
+const REFUSAL_STREAK_LIMIT: usize = 5;
 
 #[derive(Parser)]
 #[command(about = "Reach a light-client endpoint over the mixnet", version)]
@@ -152,30 +157,76 @@ async fn main() -> Result<()> {
     );
 
     let mut connections = JoinSet::new();
+    let refusal_streak = Arc::new(AtomicUsize::new(0));
+    let client_is_dead = Arc::new(Notify::new());
     // Created once rather than per iteration: a fresh future would register the handler again on
     // every pass through the loop.
     let asked_to_stop = shutdown::requested();
-    tokio::pin!(asked_to_stop);
+    let gave_up_on_the_client = client_is_dead.notified();
+    tokio::pin!(asked_to_stop, gave_up_on_the_client);
     loop {
         tokio::select! {
             accepted = listener.accept() => {
                 let (connection, wallet) = accepted.context("accepting a local connection")?;
                 let client = Arc::clone(&client);
                 let metrics = Arc::clone(&metrics);
+                let refusal_streak = Arc::clone(&refusal_streak);
+                let client_is_dead = Arc::clone(&client_is_dead);
                 connections.spawn(async move {
-                    carry(connection, &client, server, dial_settings, watchdog, &metrics).await;
+                    let outcome =
+                        carry(connection, &client, server, dial_settings, watchdog, &metrics).await;
+                    watch_for_a_dead_client(outcome, &refusal_streak, &client_is_dead);
                     tracing::debug!(%wallet, "local connection done");
                 });
             }
             // Finished connections are reaped as they end, so the set holds what is in flight
             // rather than everything this process has ever carried.
             Some(_) = connections.join_next(), if !connections.is_empty() => {}
+            _ = &mut gave_up_on_the_client => {
+                tracing::error!(
+                    streak = REFUSAL_STREAK_LIMIT,
+                    "the local mixnet client refused every open; a restart is the only recovery"
+                );
+                let _ = shutting_down.send(true);
+                drain(connections, Duration::from_secs(arguments.shutdown_grace_secs)).await;
+                anyhow::bail!("the local mixnet client stopped opening streams");
+            }
             _ = &mut asked_to_stop => {
                 let _ = shutting_down.send(true);
                 drain(connections, Duration::from_secs(arguments.shutdown_grace_secs)).await;
                 return Ok(());
             }
         }
+    }
+}
+
+/// What one wallet connection says about the local mixnet client.
+enum CarryOutcome {
+    /// A stream was opened, whatever became of the connection afterwards.
+    Carried,
+    /// No stream carried the connection. `nothing_opened` separates a client that refused every
+    /// open from a transport that swallowed every probe.
+    GaveUp { nothing_opened: bool },
+}
+
+/// Fold one connection's outcome into the refusal streak, waking `client_is_dead` at the limit.
+///
+/// Only a dial that opened nothing counts. Probes going unanswered means the client is still
+/// talking and the transport is losing them, which is the ordinary bad day this proxy rides out.
+fn watch_for_a_dead_client(
+    outcome: CarryOutcome,
+    refusal_streak: &AtomicUsize,
+    client_is_dead: &Notify,
+) {
+    match outcome {
+        CarryOutcome::GaveUp {
+            nothing_opened: true,
+        } => {
+            if refusal_streak.fetch_add(1, Ordering::Relaxed) + 1 >= REFUSAL_STREAK_LIMIT {
+                client_is_dead.notify_one();
+            }
+        }
+        _ => refusal_streak.store(0, Ordering::Relaxed),
     }
 }
 
@@ -216,7 +267,7 @@ async fn carry(
     dial_settings: DialSettings,
     watchdog: Watchdog,
     metrics: &ClientMetrics,
-) {
+) -> CarryOutcome {
     let _in_flight = metrics.connection_accepted();
 
     let dialled = match dial::dial(client, server, dial_settings).await {
@@ -233,7 +284,9 @@ async fn carry(
                 last_error = gave_up.last_error().map(|error| error.to_string()),
                 "closing a local connection with no working stream to carry it"
             );
-            return;
+            return CarryOutcome::GaveUp {
+                nothing_opened: gave_up.nothing_opened(),
+            };
         }
     };
 
@@ -254,4 +307,5 @@ async fn carry(
         ?ended,
         "connection finished"
     );
+    CarryOutcome::Carried
 }
