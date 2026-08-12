@@ -213,9 +213,8 @@ async fn main() -> Result<()> {
             }),
         };
 
-        // With a gap under test, the trial starts from a known moment rather than from wherever the
-        // previous one happened to end, which differs by seconds depending on whether it was
-        // answered or timed out.
+        // The warm-up gives the gap a known starting point: the previous trial ends either on an
+        // answer or on a timeout, seconds apart.
         if let Some(gap) = arm.gap_secs {
             warm_up(&client, server, settings).await;
             tokio::time::sleep(Duration::from_secs(gap)).await;
@@ -284,8 +283,8 @@ async fn run_trial(
 ) -> Trial {
     let started = Instant::now();
     match dial::dial(client, server, settings).await {
-        // The stream is dropped rather than used: the server half connects to its upstream only
-        // once a request arrives, so a measured stream never reaches the node.
+        // The stream is dropped, never used: the server half connects to its upstream only once a
+        // request arrives, so a measured stream never reaches the node.
         Ok(dialled) => Trial {
             arm,
             rounds: dialled.rounds,

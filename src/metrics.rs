@@ -1,15 +1,12 @@
 //! What each half counts, and why these numbers and not others.
 //!
-//! The transport's failure rate moved between 2% and 51% across three days of measurement and is
-//! not stationary, so an operator has no baseline to compare against and no way to tell a degraded
-//! network from a broken deployment by looking at a single number.
+//! The transport's failure rate is not stationary: across three days of measurement it swung by more
+//! than an order of magnitude. So no single number tells an operator whether a deployment is broken
+//! or the network is having a bad afternoon.
 //!
-//! What separates them is a **pair**: how often a freshly opened stream goes unanswered, against how
-//! often the wallet ends up with nothing. The first is the transport and drifts on its own; the
-//! second is what this project exists to keep near zero. A rising first number with a flat second
-//! one is a bad afternoon working as designed. Both rising together is this proxy failing. Neither
-//! reading is available from either number alone, which is why the dialling half counts both from
-//! the same attempt.
+//! What separates the two is a **pair**, counted from the same attempt: how often a freshly opened
+//! stream goes unanswered, against how often the wallet ends up with nothing. The first drifts with
+//! the transport; the second is the one to keep near zero. The reasoning is in ADR 0007.
 
 use std::time::Duration;
 

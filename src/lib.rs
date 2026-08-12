@@ -11,9 +11,9 @@
 //! happening.
 //!
 //! What the halves do add is a deadline. The transport loses a stream's first payload often, and
-//! silently: both ends hang rather than erroring, and gRPC libraries recover from errors but not
-//! from silence. So a stream is [probed](handshake) before the wallet is allowed near it, discarded
-//! and [replaced](dial) if it does not answer, and [torn down](splice) if it stops answering later.
+//! silently: both ends hang instead of erroring, and silence is not something a gRPC library can act
+//! on. So a stream is [probed](handshake) before the wallet is allowed near it, discarded and
+//! [replaced](dial) if it does not answer, and [torn down](splice) if it stops answering later.
 
 pub mod dial;
 pub mod endpoint;

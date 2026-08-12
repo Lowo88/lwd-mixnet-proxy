@@ -1,9 +1,8 @@
 //! What a supervisor is told about a half that is still coming up.
 //!
 //! Startup is not instant and not reliable: the client has to find a gateway and register with it,
-//! which was observed to fail outright on 2 of 15 attempts. A binary up/down answer cannot tell
-//! "still registering" from "registered and broken", and those want different reactions from
-//! whoever is watching.
+//! which does not always succeed. A binary up/down answer cannot tell "still registering" from
+//! "registered and broken", and those want different reactions from whoever is watching.
 
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU8, Ordering};

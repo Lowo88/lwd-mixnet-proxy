@@ -1,9 +1,8 @@
 //! Copying bytes between a local connection and a mixnet stream, under a deadline.
 //!
 //! The transport offers no way to signal a close: dropping a stream tells the far side nothing, so
-//! an end that walks away leaves the other holding a conversation that will never continue. Neither
-//! side can wait for an error that is never coming, which makes the timers here the only thing
-//! ending such a stream.
+//! an end that walks away leaves the other holding a conversation that will never continue. No error
+//! is ever delivered to either side, so the timers here are what end such a stream.
 //!
 //! Two of them, because a connection can be dead in two different ways:
 //!
@@ -32,7 +31,7 @@ const COPY_BUFFER: usize = 8 * 1024;
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Watchdog {
     /// Give up when the far side was sent bytes and has answered nothing for this long, counted
-    /// from the first write of the unanswered run rather than the latest one.
+    /// from the first write of the unanswered run, not the latest.
     pub stall: Option<Duration>,
     /// Give up when nothing has moved in either direction for this long.
     pub idle: Option<Duration>,
@@ -120,8 +119,8 @@ impl Watchdog {
         started: Instant,
     ) -> Option<Ended> {
         // Read before the timestamps, so bytes landing in between make the subtractions below
-        // saturate to zero rather than wrap: a deadline that has not been reached must never look
-        // like one that has.
+        // saturate to zero instead of wrapping: a deadline that has not been reached must never
+        // look like one that has.
         let now = millis_since(started);
         let wrote = activity.to_remote.moved_at();
         let heard = activity.from_remote.moved_at();
@@ -265,7 +264,7 @@ mod tests {
 
     /// Splice, failing the test if a deadline that should fire never does.
     ///
-    /// A watchdog that never trips spins forever rather than hanging: with time paused, the runtime
+    /// A watchdog that never trips spins forever instead of hanging: with time paused, the runtime
     /// keeps advancing the clock to the next tick and no test harness interrupts that.
     async fn splice_expecting_a_deadline<L, R>(
         local: L,

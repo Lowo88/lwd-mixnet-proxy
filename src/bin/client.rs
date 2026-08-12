@@ -74,8 +74,7 @@ struct Arguments {
     stall_timeout_secs: u64,
 
     /// Where to serve `/metrics` and `/health`. Unset means neither is served: this half runs on
-    /// the same machine as the wallet, so opening a port there is a decision to be made rather than
-    /// a default to be discovered.
+    /// the same machine as the wallet, so opening a port there should be the operator's call.
     #[arg(long, env = "LWD_MIXNET_METRICS_BIND")]
     metrics_bind: Option<String>,
 
@@ -171,7 +170,7 @@ async fn main() -> Result<()> {
                     Ok(accepted) => accepted,
                     // Accept fails for passing reasons — fd pressure, a connection aborted before
                     // it was picked up — and the wallet comes back. Dropping every connection in
-                    // flight over one of them is the only wrong answer. The pause is what stops fd
+                    // flight over one of them would be the wrong answer. The pause is what stops fd
                     // exhaustion from spinning this loop hot.
                     Err(error) => {
                         tracing::warn!(%error, "a local connection was not accepted");

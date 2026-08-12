@@ -116,8 +116,8 @@ async fn main() -> Result<()> {
     };
     let health = Health::starting();
 
-    // Bound before the mixnet client connects, which takes seconds and was seen to fail outright on
-    // 2 of 15 attempts: without it there is nothing to ask why startup is taking so long.
+    // Bound before the mixnet client connects, which takes seconds and does not always succeed:
+    // without it there is nothing to ask why startup is taking so long.
     let (shutting_down, shutdown) = tokio::sync::watch::channel(false);
     if let Some(bind) = &arguments.metrics_bind {
         let listener = TcpListener::bind(bind)

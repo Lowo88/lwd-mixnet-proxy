@@ -27,8 +27,8 @@ services:
     ports:
       # Loopback only: the endpoint is unauthenticated.
       - "127.0.0.1:${SERVER_METRICS_PORT:-9069}:9069"
-    # Registering with a gateway takes seconds and was seen to fail outright on 2 of 15 attempts, so
-    # the grace period is generous and a failure here means the half really is not serving.
+    # Registering with a gateway takes seconds and sometimes fails outright, so the grace period is
+    # generous and a failure here means the half really is not serving.
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://127.0.0.1:9069/health"]
       interval: 15s

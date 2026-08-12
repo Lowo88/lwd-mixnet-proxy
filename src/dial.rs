@@ -13,9 +13,9 @@
 //! of them at once.
 //!
 //! Both the rounds and the streams within them are reported to the caller rather than only logged.
-//! The gap between how often a stream fails and how often the wallet notices is what justifies this
-//! project, and whether retrying helps at all depends on failures being independent, which can only
-//! be seen by counting them separately.
+//! The gap between how often a stream fails and how often the wallet notices is the pair the metrics
+//! are built on, and whether retrying helps at all depends on failures being independent, which can
+//! only be seen by counting them separately.
 
 use std::num::NonZeroU32;
 use std::time::Duration;
@@ -32,8 +32,8 @@ use crate::handshake::{self, HandshakeError};
 #[derive(Debug, Clone, Copy)]
 pub struct ProbeSettings {
     /// How long one probe waits for its echo. Round trips measured seconds with a long tail, so a
-    /// deadline tight enough to keep establishment quick also discards healthy streams, and the two
-    /// distributions overlap: this is a trade, not a value to be tuned to a best.
+    /// deadline tight enough to keep establishment quick also discards healthy streams. The two
+    /// distributions overlap, so any setting here gives up one for the other.
     pub timeout: Duration,
     /// How many streams may be opened in total before giving up.
     pub attempts: NonZeroU32,
@@ -46,8 +46,7 @@ pub struct ProbeSettings {
 #[derive(Debug, Clone, Copy)]
 pub struct DialSettings {
     /// Reply blocks attached to each outbound message; `None` leaves the SDK default of 10. Raising
-    /// it lowers the failure rate without ever reaching zero, and costs latency, so it is a knob
-    /// and not a fix.
+    /// it lowers the failure rate and costs latency. It will not get you to zero.
     pub reply_surbs: Option<u32>,
     /// `None` sends the header without waiting for it, which is the shape this takes if the
     /// transport ever stops losing first payloads.
