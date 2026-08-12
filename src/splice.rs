@@ -128,13 +128,15 @@ impl Watchdog {
 
         // A request is outstanding when the far side was written to and has said nothing since.
         match wrote.filter(|wrote| heard.is_none_or(|heard| heard < *wrote)) {
-            // Seeded once and then left alone: writes that follow are more of the same unanswered
-            // conversation, and letting them move the start would hand a chatty wallet the power to
-            // postpone the deadline indefinitely.
             Some(wrote) => {
-                let since = *clock.since_millis.get_or_insert(wrote);
+                // Writes that follow do not move the start: letting them would hand a chatty wallet
+                // the power to postpone the deadline forever. Answers do move it, because whatever
+                // came back settled everything written before it, and a connection carrying a
+                // stream of replies is answering even while its newest write waits its turn.
+                let since = clock.since_millis.get_or_insert(wrote);
+                *since = (*since).max(heard.unwrap_or(0));
                 if let Some(stall) = self.stall
-                    && now.saturating_sub(since) >= as_millis(stall)
+                    && now.saturating_sub(*since) >= as_millis(stall)
                 {
                     return Some(Ended::Stalled(stall));
                 }
@@ -448,6 +450,73 @@ mod tests {
     #[test]
     fn a_watchdog_with_no_deadline_still_ticks() {
         assert!(Watchdog::default().check_period() > IMMEDIATE);
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn a_long_answer_delivered_in_instalments_is_not_mistaken_for_a_stall() {
+        let (mut wallet, local) = tokio::io::duplex(COPY_BUFFER);
+        let (mut server, remote) = tokio::io::duplex(COPY_BUFFER);
+
+        // One request, then the wallet only acknowledges what arrives, the way flow control does,
+        // while the far side answers in instalments for four times the deadline. Every ack lands
+        // after the instalment that prompted it, so the newest write is almost always unanswered.
+        let acknowledging = tokio::spawn(async move {
+            wallet.write_all(b"request").await.unwrap();
+            let mut instalment = [0u8; 8];
+            while wallet.read_exact(&mut instalment).await.is_ok() {
+                if wallet.write_all(b"ack").await.is_err() {
+                    return;
+                }
+            }
+        });
+        tokio::spawn(async move {
+            let mut request = [0u8; 7];
+            server.read_exact(&mut request).await.unwrap();
+            for _ in 0..24 {
+                tokio::time::sleep(Duration::from_secs(5)).await;
+                if server.write_all(b"instalme").await.is_err() {
+                    return;
+                }
+            }
+            // Dropping the stream here is the ordinary end of a streaming call.
+        });
+
+        let watchdog = Watchdog {
+            stall: Some(Duration::from_secs(30)),
+            idle: None,
+        };
+        let (transfer, ended) = splice(local, remote, watchdog).await;
+        acknowledging.abort();
+
+        assert!(
+            matches!(ended, Ended::Closed) && transfer.from_remote == 24 * 8,
+            "a stream of answers must not read as a stall: {ended:?}, {transfer:?}"
+        );
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn a_reply_stream_interleaved_with_writes_never_adds_up_to_a_stall() {
+        let started = Instant::now();
+        let activity = Activity::default();
+        let watchdog = Watchdog {
+            stall: Some(Duration::from_secs(30)),
+            idle: None,
+        };
+        let mut clock = StallClock::default();
+
+        // What a bulk download looks like from here: blocks arrive, the wallet answers with flow
+        // control, and every observation lands while that newest write is still unanswered. The
+        // far side is plainly talking, so none of it may accumulate toward the deadline.
+        let mut tripped = None;
+        for _ in 0..12 {
+            activity.from_remote.record(1, started);
+            tokio::time::advance(Duration::from_secs(5)).await;
+            activity.to_remote.record(1, started);
+            tripped = tripped.or(watchdog.tripped(&mut clock, &activity, started));
+            tokio::time::advance(Duration::from_secs(5)).await;
+        }
+
+        assert!(tripped.is_none(), "{tripped:?}");
     }
 
     #[tokio::test(start_paused = true)]
