@@ -151,6 +151,7 @@ async fn main() -> Result<()> {
         handshake_timeout_secs = arguments.handshake_timeout_secs,
         first_request_timeout_secs = arguments.first_request_timeout_secs,
         idle_timeout_secs = arguments.idle_timeout_secs,
+        max_streams = arguments.max_streams.get(),
         "accepting mixnet streams"
     );
 
