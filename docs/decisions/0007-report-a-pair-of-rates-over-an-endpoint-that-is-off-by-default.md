@@ -47,8 +47,8 @@ to ask during the part of startup that is slow and unreliable.
 
 ## Consequences
 
-- An operator can tell a degraded network from a broken deployment, which is the reading that
-  justifies running this at all. It costs two counters instead of one.
+- An operator can tell a degraded network from a broken deployment. It costs two counters instead of
+  one.
 - Nothing is exported that identifies a client. The counters are counts of streams and connections;
   no peer, no address, nothing about what a wallet asked. The endpoint is still unauthenticated, so it
   belongs on loopback or a private network: it reveals that this machine runs the proxy and how busy

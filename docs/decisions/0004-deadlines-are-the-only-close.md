@@ -32,9 +32,9 @@ Applying either deadline to the other half would be wrong. A completed response 
 legitimately quiet, so a stall deadline on the listening half would fire on healthy streams; and an
 idle deadline is far too slow to be what a waiting wallet relies on.
 
-One implementation detail is load-bearing enough to record: **neither direction is ever shut down
-individually.** A mixnet stream's `shutdown` deregisters the whole stream rather than half-closing
-it, so shutting down the write side would silently kill the read side.
+One implementation detail is worth recording: **neither direction is ever shut down individually.** A
+mixnet stream's `shutdown` deregisters the whole stream rather than half-closing it, so shutting down
+the write side would silently kill the read side.
 
 ## Consequences
 

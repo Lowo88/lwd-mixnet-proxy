@@ -30,6 +30,6 @@ drawn from it are quoted in the report (`Not enough bandwidth` six minutes into 
 `sending_delay_controller` warnings during it).
 
 Reproducing any of these needs the same release binaries, a running `lwd-mixnet-server`, and a host
-kept awake. The absolute rates will not reproduce: they are one sample of a distribution that has
-been seen anywhere between 2% and 51%, which is the reason every comparison here is interleaved
-rather than run as separate sessions.
+kept awake. The absolute rates will not reproduce; the underlying distribution spans more than an
+order of magnitude, which is why every comparison here is interleaved rather than run as separate
+sessions.

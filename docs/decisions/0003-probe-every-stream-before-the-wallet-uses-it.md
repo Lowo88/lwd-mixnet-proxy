@@ -15,10 +15,9 @@ reliable.
 The failure is overwhelmingly one of **establishment**: the stream opens and the first payload is
 lost. Under degraded conditions loss also appeared on the return path.
 
-That last fact is what makes this tractable. gRPC libraries recover from errors and do not recover
-from silence, but a failure that happens before the wallet has sent anything can be filtered without
-the wallet ever knowing. A failure in the middle of a conversation cannot: retrying there would mean
-rebuilding HTTP/2 state and replaying requests already in flight.
+That last fact is what makes this tractable. A failure that happens before the wallet has sent
+anything can be filtered without the wallet ever knowing. A failure in the middle of a conversation
+cannot: retrying there would mean rebuilding HTTP/2 state and replaying requests already in flight.
 
 ## Decision
 
@@ -31,8 +30,8 @@ stream has demonstrated a full round trip and the wallet's connection is spliced
 not, the stream is dropped and another is opened, up to a configurable number of attempts. The wallet
 sees none of this: it is holding an ordinary TCP connection that has not been answered yet.
 
-**The probe reproduces the measured failure mode exactly**, so it filters that failure by
-construction. This is not a generic retry hoping for better luck; it is a test for one known defect.
+**The probe reproduces the measured failure mode exactly.** This is not a generic retry hoping for
+better luck; it is a test for one known defect.
 
 Three details follow from the same reasoning:
 

@@ -42,14 +42,14 @@ gRPC libraries recover from errors. They do not recover from silence. So this pr
 that hang into an invisible retry, and in the worst case into a fast error:
 
 - Before the wallet sends a byte, the dialling half **probes** each stream and discards any that does
-  not answer within a deadline. The probe reproduces the measured failure exactly, so it filters it by
-  construction.
+  not answer within a deadline. The probe is the same round trip the transport loses, so a stream
+  that would have swallowed the wallet's first request swallows the probe instead.
 - Streams are opened **three at a time**, keeping the first to answer. Since a silent failure is only
   discovered when the deadline expires, retrying one at a time pays that deadline per failure and
   drags the tail out: measured side by side, that difference was a p99 of 31.3 s against 6.3 s.
-- Once bytes are moving, a **watchdog** closes a connection whose far side stopped answering, so the
-  wallet's own gRPC library reconnects. Recovering an in-flight request is not promised; **never
-  hanging forever** is.
+- Once bytes are moving, a **watchdog** closes a connection whose far side stopped answering. The
+  request in flight is lost, and the wallet gets a closed socket, which its gRPC library already
+  knows how to retry.
 
 ## Use it for the small calls, not for syncing
 
@@ -142,7 +142,7 @@ Every flag has an environment variable, listed in `--help`. The ones that matter
 | `--probe-timeout-secs` | Healthy round trips have a long tail, so a short deadline discards working streams; a long one makes each failure expensive. There is no value that is good at both. |
 | `--probe-attempts` | Total streams one connection may open before giving up. |
 | `--probe-concurrency` | Streams opened at once, three by default. One retries in series and pays a deadline per failure; three keeps the tail short at the cost of three streams and three reply-block budgets per connection. |
-| `--reply-surbs` | Raising it lowers the failure rate without reaching zero, and costs latency. A knob, not a fix. |
+| `--reply-surbs` | Raising it lowers the failure rate and costs latency. It will not get you to zero. |
 | `--stall-timeout-secs` | How long the wallet waits on an answer that is not coming before the connection is closed. |
 | `--metrics-bind` | Where to serve `/metrics` and `/health`. No default on either half: see below. |
 
@@ -204,18 +204,18 @@ curl -s localhost:9069/metrics
 curl -s localhost:9069/health     # {"state":"serving"}, 200 only once it is
 ```
 
-**Read two numbers, never one.** The transport's own failure rate moved between 2% and 51% across
-three days, so any single rate mostly records which afternoon it was measured on. What separates a bad
-afternoon from a broken deployment is the pair, both taken from the same dial:
+**Read two numbers, never one.** The transport's own failure rate swung by more than an order of
+magnitude across three days, so any single rate mostly records which afternoon it was measured on.
+What separates a bad afternoon from a broken deployment is the pair, both taken from the same dial:
 
 ```
 lwd_mixnet_client_first_round_failures_total     / lwd_mixnet_client_connections_total
 lwd_mixnet_client_connections_unestablished_total / lwd_mixnet_client_connections_total
 ```
 
-The first is the transport. The second is what a wallet actually experiences, and is what this proxy
-exists to keep near zero. The first rising alone is retry earning its keep; both rising together is
-the thing to be paged about.
+The first is the transport's own rate. The second is what a wallet actually experiences, and keeping
+it near zero is the whole job. The first rising on its own means retry is doing what it is there for;
+both rising together is worth a page.
 
 `/health` reports `starting`, `registered` or `serving`, and answers 200 only for the last. The port
 is bound before the mixnet client connects, so it can be asked about the slow, unreliable part of
@@ -270,9 +270,9 @@ establishing costs and whether failures are independent enough for retrying to h
 lwd-mixnet-bench --server <address> --trials 300 --attempts 6 --concurrency 1,3
 ```
 
-Round sizes given as a list are rotated one per trial. That is not a convenience: the transport's
-failure rate moves by an order of magnitude between one hour and the next, so two configurations
-measured in sequence cannot be told apart from the weather.
+Round sizes given as a list are rotated one per trial. The transport's failure rate moves by an order
+of magnitude between one hour and the next, so two configurations measured back to back cannot be
+told apart from the weather.
 
 What a run has to show, and why a single threshold would not have been enough, is in
 [ADR 0005](docs/decisions/0005-what-the-measurement-has-to-show.md). The results so far, including two

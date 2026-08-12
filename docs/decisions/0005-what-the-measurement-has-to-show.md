@@ -26,12 +26,12 @@ There is a fourth thing, and it is the one that can end the project quietly. Bec
 silent, it is only discovered when the probe deadline expires, so **every retry is paid for in
 seconds of establishment latency**. A configuration can clear any reliability bar and still make a
 wallet wait 47 seconds before its first byte moves, which no wallet tolerates. Treating latency as a
-number to record alongside the result, rather than as a condition of passing, would let that through.
+number to record alongside the result, instead of as a condition of passing, would let that through.
 
 ## Decision
 
-**Take both headline numbers from the same attempt, and accept or reject on a set of conditions
-rather than on one threshold.**
+**Take both headline numbers from the same attempt, and accept or reject on a set of conditions, not
+on one threshold.**
 
 One trial is one dial with retry enabled, and it records whether the **first** stream answered, which
 is what a wallet with no probe would have seen, and whether **any** stream answered, which is what a
@@ -40,19 +40,19 @@ same second, same gateway, same conditions. Comparing two configurations is a di
 is dealt with below.
 
 The benchmark is a thin binary over the same `dial` the client half calls. Measuring the production
-code path rather than a parallel implementation is the point: a rig that reimplements the retry can
-be right about a mechanism that does not ship.
+code path is the point: a rig that reimplements the retry can be right about a mechanism that does
+not ship.
 
 A run counts, and the design is accepted, on all of:
 
 0. **The run is clean.** No open was refused by the local client. A refused open is this machine
-   failing, reported instantly, and not the silent loss being filtered; counted together with it, a
+   failing, reported instantly, while the loss being filtered here is silent. Counted together, a
    degrading client reads as a degrading network whose failures have become correlated, because a
    broken client fails every round of every trial. Any refusal invalidates the run, and a client that
    stops opening altogether ends it rather than finishing it.
 1. **The run is powered.** At least 300 trials, with a raw failure rate of at least 10%. Below that
    there are too few raw failures for the retry to be doing anything measurable, and the result must
-   be reported as unmeasured rather than as passing.
+   be reported as unmeasured, not as passing.
 2. **Failures are independent enough to retry.** The failure rate of round two, conditional on round
    one having failed, is not substantially above the rate of round one. This is the load-bearing
    condition: it is a property of the transport rather than of the afternoon, so from it the attempts
@@ -69,13 +69,12 @@ deadline, while streams inside one round are simultaneous, so comparing them sep
 that decays with time from correlation that belongs to a moment.
 
 **Configurations are interleaved trial by trial, and the same-attempt argument does not extend to
-them.** Crude and visible rates come from one attempt and need no interleaving, which is the whole
-point above. Two round sizes cannot: they are separate dials, and run as separate sessions they are
-an hour apart on a transport that moves by an order of magnitude, so the difference between them is
-indistinguishable from the weather. Rotating them one per trial is therefore not an optional
-refinement but the only way the comparison means anything.
+them.** Crude and visible rates come from one attempt and need no interleaving. Two round sizes
+cannot: they are separate dials, and run as separate sessions they are an hour apart on a transport
+that moves by an order of magnitude, so the difference between them is indistinguishable from the
+weather. Rotating them one per trial is therefore the only way the comparison means anything.
 
-**A per-stream rate is not measurable with rounds larger than one**, and the tool says so rather than
+**A per-stream rate is not measurable with rounds larger than one**, and the tool says so instead of
 printing a number. A round ends as soon as one stream answers, and the rest are cancelled seconds
 before their deadline would have expired, so the streams that were going to fail are dropped before
 they can. Only the round is measurable at that size, which is why the round is the unit compared
@@ -84,14 +83,14 @@ across configurations.
 ## Consequences
 
 - The comparison holds while the transport is degrading, which is the condition it most needs to
-  survive, and a quiet afternoon is reported as uninformative rather than as a pass.
+  survive, and a quiet afternoon is reported as uninformative, not as a pass.
 - The retried rate is conditional rather than independent: later attempts happen only because earlier
   ones failed. That is a feature. If failures are correlated, retry does not help, and condition 2
   says so instead of assuming otherwise.
 - Sequential retry and hedged opening are the same code under different configuration, so both can be
   measured in one session and compared without the drift that would invalidate separate runs.
 - The latency budget is a design input, not an outcome: the deadline and the number of attempts are
-  chosen to fit it, rather than being chosen first and measured afterwards.
+  chosen to fit it.
 - What the probe costs is read off the same run: the elapsed time of an answering round is the round
   trip the probe adds to establishing a connection.
 - A measured stream is never used, and the listening half connects to its upstream only when a request

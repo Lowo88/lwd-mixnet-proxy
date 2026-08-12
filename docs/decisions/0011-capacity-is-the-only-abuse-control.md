@@ -21,7 +21,7 @@ dropped before its handshake is read, counted as
 `lwd_mixnet_server_streams_rejected_total{reason="over_capacity"}`, and logged.
 
 **Drop, do not queue.** A queued stream would sit there ageing toward the probe deadline its dialler
-is already counting down, and arrive dead. Shedding is honest and immediate.
+is already counting down, and arrive dead.
 
 **The permit is held by the serving task**, so it comes back when the stream is let go — by the
 handshake deadline, the first-request deadline, or the idle deadline. The cap therefore bounds

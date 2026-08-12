@@ -7,12 +7,12 @@ and [ADR 0005](../decisions/0005-what-the-measurement-has-to-show.md).
 
 `lwd-mixnet-bench` drives the same `dial` the client half calls, against a running `lwd-mixnet-server`
 on the same machine, so the only thing between the two ends is the mixnet. Both binaries were release
-builds: in a debug build the SDK's Sphinx cryptography is unoptimised, which would distort exactly the
-latencies that decide the outcome.
+builds: in a debug build the SDK's Sphinx cryptography is unoptimised, which would distort the
+latencies the whole result turns on.
 
 One trial is one dial. Round sizes are **interleaved trial by trial** rather than run as separate
-sessions, and per-round conditional rates are recorded so that whether retrying multiplies is measured
-rather than assumed. The reasoning behind both is in ADR 0005.
+sessions, and per-round conditional rates are recorded so that whether retrying multiplies is measured,
+not assumed. The reasoning behind both is in ADR 0005.
 
 Four runs were made. The two that were thrown out are reported because what invalidated them is a
 result in itself.
@@ -97,7 +97,7 @@ It was the local client dying. It warned `Not enough bandwidth` six minutes in, 
 loop about 40 minutes in (754 warnings of `sending_delay_controller: Trying to increase delay
 multiplier higher than allowed`), and by the end was refusing every open instantly: the last 50 trials
 took **zero** seconds between them. Of 178 first-attempt failures, 77 were opens the SDK refused
-outright rather than probes going unanswered.
+outright, not probes going unanswered.
 
 Restricted to the first 200 trials, where no open was refused, the same run reads: 45.0% raw, 4.0%
 wallet-visible, an 11.2x reduction, and **flat** conditional rates of 45.0%, 45.6%, 41.5%, 47.1%,

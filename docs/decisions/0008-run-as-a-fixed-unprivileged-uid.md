@@ -29,7 +29,7 @@ number.
 - The compose file in this repository works as it stands: its named volume is initialised from the
   image and lands owned by 10001.
 - A bind mount does not inherit anything and has to be chowned first, which is a step someone will
-  forget. The failure is loud and at startup rather than subtle.
+  forget. The failure is loud, and it happens at startup.
 - A volume created by an earlier root-running image stays owned by root and the process can no longer
   write to it. Discarding it is the fix, and it costs the identity: the address changes, and anyone
   who wrote the old one down cannot reach that half again.

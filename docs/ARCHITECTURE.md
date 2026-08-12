@@ -18,24 +18,23 @@ a local port and sees an ordinary TCP connection, while the server sees an ordin
 serving half takes its upstream from configuration, so it works in front of any implementation of the
 light-client protocol.
 
-What the halves add is not translation. It is a **deadline**.
+What the halves add is a **deadline**.
 
-## Why a deadline is the whole product
+## Why there is a deadline
 
 The transport loses a stream's first payload, often and silently: the stream opens, the far side
 accepts it, `write_all` and `flush` both return `Ok`, and nothing arrives. Neither end errors and
-neither times out. Measured over three days, the rate moved between 2% and 51% and is not stationary.
+neither times out. Measured over three days, the rate moved between 2% and 51%, and it does not settle.
 
-gRPC libraries recover from errors and do not recover from silence. So the value here is the
-conversion of a hang into either an invisible retry or a fast error, and every design choice below
-follows from that one sentence.
+An error is something a gRPC library can act on. Silence is not, so the job here is turning a hang
+into either an invisible retry or a fast error. Most of what follows is downstream of that.
 
 ## The two halves
 
 **`lwd-mixnet-client`** (`src/bin/client.rs`) runs next to the wallet. It listens on a local TCP port
 and, for each connection, opens a mixnet stream that has been shown to work before splicing the two
-together. Its mixnet identity is deliberately ephemeral: a stable one is exactly what would let a
-server correlate a wallet's requests across sessions.
+together. Its mixnet identity is ephemeral on purpose: a stable one would let a server correlate a
+wallet's requests across sessions.
 
 **`lwd-mixnet-server`** (`src/bin/server.rs`) runs next to the server. It accepts mixnet streams,
 requires each to introduce itself, and splices it to a configured TCP upstream. Its identity is
@@ -52,30 +51,29 @@ client half uses rather than a copy of it. What a run has to show is in
 `src/lib.rs` holds what both halves need and what deserves tests.
 
 **`handshake`** is a 14-byte header: a magic, a version, a flag, and a token. The dialling half sends
-it; the listening half echoes it when asked. This is the probe, and it reproduces the measured failure
-mode exactly, so it filters that failure by construction rather than by hoping. The header is
-mandatory even when the probe is off, because it is also how the listening half tells one of our
-streams from arbitrary mixnet traffic that would otherwise reach the upstream.
+it; the listening half echoes it when asked. This is the probe: the same round trip the transport
+loses, run while nothing of the wallet's is at stake yet. The header is mandatory even when the probe
+is off, because it is also how the listening half tells one of our streams from arbitrary mixnet
+traffic that would otherwise reach the upstream.
 
 **`dial`** opens streams until one answers, grouped into **rounds** of three by default. A round of one
 is a sequential retry, where each failure costs a whole deadline before the next attempt starts; a
 round of several opens them at once and takes the first to answer, turning that sum into a minimum at
 the cost of reply blocks. Measured side by side, that is the difference between a 31.3 s and a 6.3 s
-p99 to establish. It returns every round and every discarded stream to the caller, because the gap
-between how often a stream fails and how often a wallet notices is the number that justifies this
-project.
+p99 to establish. It returns every round and every discarded stream to the caller: the gap between how
+often a stream fails and how often a wallet notices is what the metrics and the benchmark are both
+built on.
 
 **`splice`** copies bytes both ways under two timers. **Stall** means the far side was written to and
 has answered nothing since, which the dialling half uses to close the local connection and turn a hang
 into a reconnect. **Idle** means nothing has moved at all, which the listening half uses to let go of
-streams whose dialler is gone. The transport carries no close, so these timers are the only thing that
-ends a dead conversation.
+streams whose dialler is gone. The transport carries no close, so nothing else ends a dead
+conversation.
 
-**`metrics`** holds what each half counts. The number that matters is a **pair**: how often a freshly
-opened round of streams goes unanswered, against how often the wallet is left with nothing. Both come
-from the same dial, which is what makes them comparable on a transport whose rate moves by an order of
-magnitude between one hour and the next. One rising without the other is a bad afternoon being
-absorbed; both rising together is this proxy failing.
+**`metrics`** holds what each half counts. The number that matters is a **pair**, both taken from the
+same dial: how often a freshly opened round goes unanswered, against how often the wallet is left with
+nothing. Why it has to be two numbers is
+[0007](decisions/0007-report-a-pair-of-rates-over-an-endpoint-that-is-off-by-default.md).
 
 **`health`** is the three states a half moves through: `starting`, `registered`, `serving`. Startup is
 neither instant nor reliable, so a binary up/down cannot tell "still registering" from "registered and
@@ -83,16 +81,16 @@ broken".
 
 **`endpoint`** serves both over HTTP, on a port that is only opened when one is configured.
 
-**`shutdown`** waits for either signal a stop can arrive as, which is what makes the drain below
-reachable from a container at all.
+**`shutdown`** waits for either signal a stop can arrive as. Without `SIGTERM` the drain below is
+unreachable in a container.
 
 ## Observability
 
 Both halves take `--metrics-bind`, and neither has a default: the dialling half runs on a wallet's
 machine, and the listening half is someone's server. Where one is given, `/metrics` carries the
 Prometheus exposition format and `/health` a small JSON body, answering 200 only once the half is
-serving. That port is bound **before** the mixnet client connects, because connecting is the slow and
-failure-prone part of startup and is exactly when someone wants to ask what is happening.
+serving. That port is bound **before** the mixnet client connects, because connecting is the slow,
+failure-prone part of startup, and that is when someone wants to ask what is going on.
 
 Nothing exported or logged identifies a client: the counters count streams and connections, and the
 stream identifiers that appear in logs are random per stream. The endpoint is unauthenticated and
