@@ -464,6 +464,10 @@ mod tests {
             wallet.write_all(b"request").await.unwrap();
             let mut instalment = [0u8; 8];
             while wallet.read_exact(&mut instalment).await.is_ok() {
+                // The gap matters: an ack in the same millisecond as the instalment reads as an
+                // answer whatever the clock does, and the bug this guards lives in the window
+                // where the newest write is genuinely younger than the newest thing heard.
+                tokio::time::sleep(Duration::from_millis(500)).await;
                 if wallet.write_all(b"ack").await.is_err() {
                     return;
                 }
