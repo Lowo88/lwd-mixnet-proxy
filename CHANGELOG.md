@@ -5,6 +5,11 @@ All notable changes to this project are documented here. The format is loosely b
 
 ## [Unreleased]
 
+### Measurement
+- The public testnet serving half ran 51 hours on one process. Its gateway allowance emptied at
+  exactly 00:00:00 UTC on both midnights it crossed, and the client refilled it in under 300 ms each
+  time. Report, counters and raw log in `docs/measurements/2026-08-15-daily-bandwidth-cliff.md`.
+
 ## [0.1.0] - 2026-08-12
 
 First public release (beta). Two binaries that carry a Zcash light wallet's gRPC connection over the

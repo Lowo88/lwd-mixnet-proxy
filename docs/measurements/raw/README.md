@@ -1,8 +1,13 @@
-# Raw benchmark output
+# Raw output
 
-Unedited stdout from `lwd-mixnet-bench`, one file per run, kept so the conclusions in
-[`../2026-08-06-probe-and-retry.md`](../2026-08-06-probe-and-retry.md) can be checked against the
-trials they came from rather than taken on trust. Numbered in the order the runs happened.
+What the reports in [`../`](../README.md) were written from, kept so their conclusions can be checked
+against the lines they came from rather than taken on trust.
+
+## Bench runs
+
+Unedited stdout from `lwd-mixnet-bench`, one file per run, behind
+[`../2026-08-06-probe-and-retry.md`](../2026-08-06-probe-and-retry.md). Numbered in the order the runs
+happened.
 
 | file | what it was | verdict |
 |---|---|---|
@@ -33,3 +38,16 @@ Reproducing any of these needs the same release binaries, a running `lwd-mixnet-
 kept awake. The absolute rates will not reproduce; the underlying distribution spans more than an
 order of magnitude, which is why every comparison here is interleaved rather than run as separate
 sessions.
+
+## Deployment log
+
+`2026-08-15-bandwidth-cliff.log` sits behind
+[`../2026-08-15-daily-bandwidth-cliff.md`](../2026-08-15-daily-bandwidth-cliff.md): the container log
+of the public testnet serving half, filtered to the two seconds in which its bandwidth allowance
+emptied. All 106 lines the two events produced are here, in order, at the resolution the client logs
+them. Almost all of them come from the SDK rather than from this project.
+
+Edited the same way and for the same reason as the bench files: the serving half's Nym address, its
+gateway's identity and that gateway's hostname are replaced with `<serving-address>`, `<gateway>` and
+`<gateway-host>`. Terminal colour codes are stripped. Nothing else is touched, and no line is removed
+from the windows.

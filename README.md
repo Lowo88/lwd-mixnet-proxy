@@ -277,13 +277,13 @@ told apart from the weather.
 What a run has to show, and why a single threshold would not have been enough, is in
 [ADR 0005](docs/decisions/0005-what-the-measurement-has-to-show.md). The results so far, including two
 runs that had to be thrown out and what they teach, are in
-[`docs/measurements/`](docs/measurements/2026-08-06-probe-and-retry.md).
+[`docs/measurements/`](docs/measurements/README.md).
 
 ## Documentation
 
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — what the pieces are and how bytes move.
 - [`docs/decisions/`](docs/decisions/README.md) — why it looks like this.
-- [`docs/measurements/`](docs/measurements/2026-08-06-probe-and-retry.md) — what was measured, and what it cost to measure it properly. Raw output from every run is kept alongside it.
+- [`docs/measurements/`](docs/measurements/README.md) — what was measured, and what it cost to measure it properly. Raw output from every run is kept alongside it.
 - [SECURITY.md](SECURITY.md) — how to report a vulnerability, and how advisories against the pinned dependency tree are watched.
 
 ## Acknowledgments

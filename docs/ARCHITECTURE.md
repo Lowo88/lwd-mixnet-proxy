@@ -44,7 +44,7 @@ That directory is private key material.
 **`lwd-mixnet-bench`** (`src/bin/bench.rs`) is the measurement, and it drives the same `dial` the
 client half uses rather than a copy of it. What a run has to show is in
 [0005](decisions/0005-what-the-measurement-has-to-show.md); what the runs showed is in
-[`measurements/`](measurements/2026-08-06-probe-and-retry.md).
+[`measurements/`](measurements/README.md).
 
 ## The library
 
