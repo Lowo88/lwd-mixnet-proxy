@@ -1,0 +1,86 @@
+BENCH (docker run lwd-mixnet-bench --server public-testnet-server --trials 20)
+==============================================================================
+
+Author: LaDale / Nozy wallet (Lowo88)
+Window: 2026-08-15 afternoon (bench started ~16:15:36Z)
+SERVER_ADDRESS redacted to public-testnet-server.
+ANSI colour codes stripped from SDK stderr.
+
+trials 20 | attempts 6 | round sizes 1,3 interleaved | probe timeout 10s | reply blocks SDK default
+
+    1  r1       answered  1 rounds   0 unanswered   0 refused    1161 ms
+    2  r3       answered  1 rounds   0 unanswered   0 refused    1392 ms
+    3  r1       answered  1 rounds   0 unanswered   0 refused     946 ms
+    4  r3       answered  1 rounds   0 unanswered   0 refused    1649 ms
+    5  r1       answered  2 rounds   1 unanswered   0 refused   12697 ms
+    6  r3       answered  1 rounds   0 unanswered   0 refused    1235 ms
+    7  r1       answered  2 rounds   1 unanswered   0 refused   11171 ms
+    8  r3       answered  1 rounds   0 unanswered   0 refused    1460 ms
+    9  r1       answered  2 rounds   1 unanswered   0 refused   12328 ms
+   10  r3       answered  1 rounds   0 unanswered   0 refused    1257 ms
+   11  r1       answered  3 rounds   2 unanswered   0 refused   21447 ms
+   12  r3       answered  1 rounds   0 unanswered   0 refused    1194 ms
+   13  r1       answered  1 rounds   0 unanswered   0 refused    2906 ms
+   14  r3       answered  2 rounds   3 unanswered   0 refused   11190 ms
+   15  r1       answered  4 rounds   3 unanswered   0 refused   31176 ms
+   16  r3       answered  1 rounds   0 unanswered   0 refused    1240 ms
+   17  r1       answered  1 rounds   0 unanswered   0 refused    2418 ms
+   18  r3       answered  1 rounds   0 unanswered   0 refused    1350 ms
+   19  r1       answered  2 rounds   1 unanswered   0 refused   11126 ms
+   20  r3       answered  1 rounds   0 unanswered   0 refused    1464 ms
+
+=== rounds of 1 (sequential retry) ===
+trials                       10
+first-round failure rate      60.00%  (6/10)   the stream's probe went unanswered
+wallet-visible failure rate    0.00%  (0/10)   no stream answered at all
+streams opened               19   (1.9 per trial, 0 cancelled once another answered)
+reduction factor             >10x  (no visible failure in this arm)
+
+failure rate per round, conditional on every earlier round failing
+round  reached  failed    rate
+    1       10       6   60.00%
+    2        6       2   33.33%
+    3        2       1   50.00%
+    4        1       0    0.00%
+
+latency
+round that answered                p50   1445 ms | p90   2695 ms | p99   2906 ms | max   2906 ms
+establishment seen by the wallet   p50  11171 ms | p90  21447 ms | p99  31176 ms | max  31176 ms
+time spent on a discarded stream   p50  10001 ms | p90  10002 ms | p99  10002 ms | max  10002 ms
+a discarded stream costs the whole probe timeout (10s), because the failure is silent
+
+=== rounds of 3 (opened together) ===
+trials                       10
+first-round failure rate      10.00%  (1/10)   no stream of the round answered
+wallet-visible failure rate    0.00%  (0/10)   no stream answered at all
+streams opened               33   (3.3 per trial, 20 cancelled once another answered)
+reduction factor             >10x  (no visible failure in this arm)
+per-stream rate              not measurable with rounds of 3: the losers are cancelled seconds before their deadline
+
+failure rate per round, conditional on every earlier round failing
+round  reached  failed    rate
+    1       10       1   10.00%
+    2        1       0    0.00%
+
+streams that went unanswered inside one round
+opened  unanswered  rounds
+     3           0      10
+     3           3       1
+
+latency
+round that answered                p50   1350 ms | p90   1464 ms | p99   1649 ms | max   1649 ms
+establishment seen by the wallet   p50   1392 ms | p90   1649 ms | p99  11190 ms | max  11190 ms
+time spent on a discarded stream   p50  10033 ms | p90  10046 ms | p99  10046 ms | max  10046 ms
+a discarded stream costs the whole probe timeout (10s), because the failure is silent
+
+=== comparison, interleaved in the same window ===
+                                     rounds of 1         rounds of 3
+first-round failure rate                  60.00%              10.00%
+wallet-visible failure rate                0.00%               0.00%
+establishment p50                       11171 ms             1392 ms
+establishment p99                       31176 ms            11190 ms
+streams opened per trial                     1.9                 3.3
+
+Are simultaneous streams independent?
+  per-stream failure rate, from rounds of 1     60.00%
+  a round of 3 should then fail               21.60%,  observed  10.00%

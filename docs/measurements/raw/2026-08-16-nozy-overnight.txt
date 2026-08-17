@@ -1,0 +1,53 @@
+lwd-mixnet-proxy client overnight check
+=======================================
+
+Author: LaDale / Nozy wallet (Lowo88)
+Companion to 2026-08-15-nozy-client-metrics.txt / 2026-08-15-nozy-external-client.md
+
+UTC_NOW:                 2026-08-16T16:25:03Z
+APPROX_UPTIME_SINCE:     2026-08-15T16:07:56Z
+APPROX_UPTIME:           ~24h 17m (since 2026-08-15T16:07:56Z; docker RunningFor=24 hours)
+STILL_RUNNING:           yes
+DOCKER:                  lwd-mixnet-proxy-client-1 | Up 24 hours (healthy)
+RestartCount:            0
+HEALTH:                  {"state":"serving"}
+
+Key metrics (now) vs baseline (~2026-08-15T16:18Z)
+--------------------------------------------------
+metric                              baseline    now     delta
+connections_total                   30          30      0
+first_round_failures_total          5           5       0
+connections_unestablished_total     2           2       0
+streams_discarded unanswered        17          17      0
+connections_ended closed            (n/a)       28      -
+rounds_total                        (n/a)       35      -
+streams_opened_total                (n/a)       95      -
+connections_in_flight               (n/a)       0       -
+bytes_total from/to_mixnet          (n/a)       0/0     -
+
+Interpretation: counters flat overnight - no new wallet connections after the
+2026-08-15 probe run; process stayed healthy and serving.
+
+Bandwidth / errors (compose logs --since 24h, exact phrase)
+-----------------------------------------------------------
+Not enough bandwidth WARN count:  14  (all at 2026-08-16T00:00:01Z)
+managed to claim testnet bandwidth: 1 (immediately after, same second)
+remaining bandwidth 0.00 B seen:    yes (midnight reclaim window)
+panic/crash:                        none observed
+Client idle cover traffic continuing (last log ~2026-08-16T16:15:52Z)
+
+Correlate with serving-half cliff report: same midnight UTC second on 16 aug.
+
+Full lwd_mixnet_client_* metrics at check time
+----------------------------------------------
+lwd_mixnet_client_bytes_total{direction="from_mixnet"} 0
+lwd_mixnet_client_bytes_total{direction="to_mixnet"} 0
+lwd_mixnet_client_connections_ended_total{reason="closed"} 28
+lwd_mixnet_client_connections_in_flight 0
+lwd_mixnet_client_connections_total 30
+lwd_mixnet_client_connections_unestablished_total 2
+lwd_mixnet_client_establishment_seconds_count 28
+lwd_mixnet_client_first_round_failures_total 5
+lwd_mixnet_client_rounds_total 35
+lwd_mixnet_client_streams_discarded_total{reason="unanswered"} 17
+lwd_mixnet_client_streams_opened_total 95
