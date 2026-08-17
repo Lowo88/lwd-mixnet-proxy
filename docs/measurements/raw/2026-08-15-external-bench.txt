@@ -1,11 +1,12 @@
 BENCH (docker run lwd-mixnet-bench --server public-testnet-server --trials 20)
 ==============================================================================
 
-Author: LaDale / Nozy wallet (Lowo88)
+Author: LaDale (forum user Lowo88)
 Window: 2026-08-15 afternoon (bench started ~16:15:36Z)
 SERVER_ADDRESS redacted to public-testnet-server.
 ANSI colour codes stripped from SDK stderr.
 
+dialling public-testnet-server
 trials 20 | attempts 6 | round sizes 1,3 interleaved | probe timeout 10s | reply blocks SDK default
 
     1  r1       answered  1 rounds   0 unanswered   0 refused    1161 ms

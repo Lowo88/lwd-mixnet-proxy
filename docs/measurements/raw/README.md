@@ -59,19 +59,18 @@ timestamp the client wrote. The redaction that applies to the bench files, repla
 address and the gateway it registered with, had nothing to catch here: no line in any of these windows
 names an address, a gateway or a host.
 
+## External dialling half (forum user Lowo88)
 
-## External dialling half (Nozy / Lowo88)
-
-Three files sit behind [`../2026-08-15-nozy-external-client.md`](../2026-08-15-nozy-external-client.md):
+Three files sit behind [`../2026-08-15-external-client.md`](../2026-08-15-external-client.md):
 client `/metrics` from one afternoon against the public testnet serving address, a small
 `lwd-mixnet-bench` run in the same window, and an overnight check the next day.
 
 | file | what it is |
 |---|---|
-| `2026-08-15-nozy-client-metrics.txt` | timestamps, computed rates, and the Prometheus `/metrics` block at 2026-08-15T16:18:05Z |
-| `2026-08-15-nozy-bench.txt` | 20 interleaved r1/r3 trials and the tool summary (ANSI stripped) |
-| `2026-08-16-nozy-overnight.txt` | ~24h health check, flat counters, midnight `Not enough bandwidth` x14 |
+| `2026-08-15-external-client-metrics.txt` | timestamps, computed rates, and the Prometheus `/metrics` block at 2026-08-15T16:18:05Z |
+| `2026-08-15-external-bench.txt` | 20 interleaved r1/r3 trials and the tool summary (ANSI stripped) |
+| `2026-08-16-external-overnight.txt` | ~24h health check, flat counters, and the 16 Aug midnight WARN/claim lines |
 
-The dialled Nym address is replaced with `public-testnet-server`. Entry gateway identity for
-the dialling half is kept because it is this operator's own setup, not a claim about a
-stranger's node.
+The dialled Nym address is replaced with `public-testnet-server`. The entry gateway is
+labelled `entry-gateway-A`. Publishing a failure rate next to a named public gateway
+would imply something about that node that these runs never measured.
