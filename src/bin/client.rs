@@ -20,6 +20,7 @@ use nym_sdk::mixnet::{MixnetClient, Recipient};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::{Mutex, Notify};
 use tokio::task::JoinSet;
+use tokio::time::Instant;
 
 /// Consecutive wallet connections that open no stream at all before the process gives up. Enough
 /// to rule out a blip, and a client this far gone refuses instantly, so five cost milliseconds.
@@ -184,13 +185,22 @@ async fn main() -> Result<()> {
                         continue;
                     }
                 };
+                let accepted = Instant::now();
                 let client = Arc::clone(&client);
                 let metrics = Arc::clone(&metrics);
                 let refusal_streak = Arc::clone(&refusal_streak);
                 let client_is_dead = Arc::clone(&client_is_dead);
                 connections.spawn(async move {
-                    let outcome =
-                        carry(connection, &client, server, dial_settings, watchdog, &metrics).await;
+                    let outcome = carry(
+                        connection,
+                        accepted,
+                        &client,
+                        server,
+                        dial_settings,
+                        watchdog,
+                        &metrics,
+                    )
+                    .await;
                     watch_for_a_dead_client(outcome, &refusal_streak, &client_is_dead);
                     tracing::debug!(%wallet, "local connection done");
                 });
@@ -276,8 +286,12 @@ async fn drain(mut connections: JoinSet<()>, grace: Duration) {
 }
 
 /// Carry one wallet connection over a stream that has been shown to work.
+///
+/// `accepted` is when the wallet's connection arrived, which is where the metrics time
+/// establishment from.
 async fn carry(
     connection: TcpStream,
+    accepted: Instant,
     client: &Mutex<MixnetClient>,
     server: Recipient,
     dial_settings: DialSettings,
@@ -288,11 +302,11 @@ async fn carry(
 
     let dialled = match dial::dial(client, server, dial_settings).await {
         Ok(dialled) => {
-            metrics.dialled(&dialled.rounds, Some(dialled.elapsed));
+            metrics.established(&dialled.rounds, accepted);
             dialled
         }
         Err(gave_up) => {
-            metrics.dialled(&gave_up.rounds, None);
+            metrics.gave_up(&gave_up.rounds);
             // Dropping the connection is the point: the wallet sees a closed socket, which its gRPC
             // library knows how to retry, rather than a request that never returns.
             tracing::warn!(
@@ -310,7 +324,8 @@ async fn carry(
         tracing::info!(
             discarded = dialled.discarded(),
             rounds = dialled.rounds.len(),
-            established = ?dialled.elapsed,
+            waited = ?accepted.elapsed(),
+            answering_round = ?dialled.answering_round,
             "a stream answered after discarding streams that did not"
         );
     }

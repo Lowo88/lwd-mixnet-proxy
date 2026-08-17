@@ -124,8 +124,8 @@ struct Trial {
     rounds: Vec<Round>,
     /// How long the whole trial took, retries included. This is what a wallet waits.
     total: Duration,
-    /// How long the answering round took, or `None` if none did.
-    established: Option<Duration>,
+    /// How long the round that answered took, or `None` if none did.
+    answering_round: Option<Duration>,
 }
 
 impl Trial {
@@ -134,7 +134,7 @@ impl Trial {
     }
 
     fn answered(&self) -> bool {
-        self.established.is_some()
+        self.answering_round.is_some()
     }
 
     /// Whether the streams opened together at the start all went unanswered.
@@ -289,13 +289,13 @@ async fn run_trial(
             arm,
             rounds: dialled.rounds,
             total: started.elapsed(),
-            established: Some(dialled.elapsed),
+            answering_round: Some(dialled.answering_round),
         },
         Err(gave_up) => Trial {
             arm,
             rounds: gave_up.rounds,
             total: started.elapsed(),
-            established: None,
+            answering_round: None,
         },
     }
 }
@@ -548,7 +548,7 @@ fn within_round(arm: &[&Trial]) {
 fn latency(arm: &[&Trial], probe_timeout_secs: u64) {
     let answering: Vec<u128> = arm
         .iter()
-        .filter_map(|trial| trial.established)
+        .filter_map(|trial| trial.answering_round)
         .map(|elapsed| elapsed.as_millis())
         .collect();
     let discarded: Vec<u128> = arm
