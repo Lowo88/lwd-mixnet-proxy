@@ -18,3 +18,4 @@ records explain why it looks the way it does.
 | [0009](0009-watch-advisories-against-a-pinned-tree.md) | Watch advisories against a pinned tree |
 | [0010](0010-exit-when-the-local-client-degrades.md) | Exit when the local client degrades |
 | [0011](0011-capacity-is-the-only-abuse-control.md) | Capacity is the only abuse control |
+| [0012](0012-spend-the-attempt-budget-in-whole-rounds.md) | Spend the attempt budget in whole rounds |

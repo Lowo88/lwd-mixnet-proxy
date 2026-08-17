@@ -43,7 +43,13 @@ struct Arguments {
     probe_timeout_secs: u64,
 
     /// How many streams may be opened for one wallet connection, the first included.
-    #[arg(long, env = "LWD_MIXNET_PROBE_ATTEMPTS", default_value = "4")]
+    ///
+    /// Six by default, two full rounds at the default concurrency (ADR 0012). Failures between
+    /// rounds are independent, so the budget is the exponent on the rate a wallet sees: at a
+    /// per-stream rate of 0.55, four attempts leave 9.2% of connections with nothing, six leave
+    /// 2.8%. A budget that does not divide by the round size ends on a short round, which retries
+    /// in series exactly when the transport is worst.
+    #[arg(long, env = "LWD_MIXNET_PROBE_ATTEMPTS", default_value = "6")]
     probe_attempts: NonZeroU32,
 
     /// How many of those are opened at once. One retries in series, so each failure costs a whole

@@ -140,7 +140,7 @@ Every flag has an environment variable, listed in `--help`. The ones that matter
 | flag | what it trades |
 |---|---|
 | `--probe-timeout-secs` | Healthy round trips have a long tail, so a short deadline discards working streams; a long one makes each failure expensive. There is no value that is good at both. |
-| `--probe-attempts` | Total streams one connection may open before giving up. |
+| `--probe-attempts` | Total streams one connection may open before giving up, six by default. Failures between rounds are independent, so this is the exponent on the rate a wallet sees. That rate moves by an order of magnitude between afternoons. Keep it a multiple of `--probe-concurrency`: a budget that ends on a short round retries in series just when the transport is worst. |
 | `--probe-concurrency` | Streams opened at once, three by default. One retries in series and pays a deadline per failure; three keeps the tail short at the cost of three streams and three reply-block budgets per connection. |
 | `--reply-surbs` | Raising it lowers the failure rate and costs latency. It will not get you to zero. |
 | `--stall-timeout-secs` | How long the wallet waits on an answer that is not coming before the connection is closed. |
@@ -170,7 +170,7 @@ in use`; pass `--metrics-bind` per process instead.
 | `LWD_MIXNET_SERVER` | `--server` | **required** |
 | `LWD_MIXNET_BIND` | `--bind` | `127.0.0.1:9068` |
 | `LWD_MIXNET_PROBE_TIMEOUT_SECS` | `--probe-timeout-secs` | `10` |
-| `LWD_MIXNET_PROBE_ATTEMPTS` | `--probe-attempts` | `4` |
+| `LWD_MIXNET_PROBE_ATTEMPTS` | `--probe-attempts` | `6` |
 | `LWD_MIXNET_PROBE_CONCURRENCY` | `--probe-concurrency` | `3` |
 | `LWD_MIXNET_NO_PROBE` | `--no-probe` | off |
 | `LWD_MIXNET_REPLY_SURBS` | `--reply-surbs` | unset, leaving the SDK's 10 |
