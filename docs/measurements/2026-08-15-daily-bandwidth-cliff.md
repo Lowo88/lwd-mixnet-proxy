@@ -135,8 +135,8 @@ those two-hour runs, it was not this.
 
 The 2026-08-15 version of this report could not say whether the reset belonged to this gateway, to
 testnet accounting, or to the network. It does now, at least in part. A dialling half run by someone
-else, on another machine and another gateway, hit the same window on the night of 16 aug and recovered
-the same way without restarting. Two independent clients emptying and refilling inside the same second
+else, on another machine and another gateway, hit the same reset on the night of 16 aug and recovered
+the same way without restarting. Two independent clients emptying and refilling inside the same window
 is hard to explain as a property of either registration.
 
 ## Limitations
