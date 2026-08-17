@@ -56,8 +56,9 @@ pub struct DialSettings {
 /// A stream that answered, and what it cost to get one.
 pub struct Dialled {
     pub stream: MixnetStream,
-    /// How long the answering attempt took, which is what the probe adds to establishing.
-    pub elapsed: Duration,
+    /// How long the round that answered took. Every round before it is outside this, so it is what
+    /// one round costs and not what the caller waited.
+    pub answering_round: Duration,
     /// Every round run, the answering one last.
     pub rounds: Vec<Round>,
 }
@@ -156,10 +157,10 @@ pub async fn dial(
         let (answered, round) = run_round(client, server, settings, size).await;
         rounds.push(round);
 
-        if let Some((stream, elapsed)) = answered {
+        if let Some((stream, answering_round)) = answered {
             return Ok(Dialled {
                 stream,
-                elapsed,
+                answering_round,
                 rounds,
             });
         }

@@ -8,12 +8,11 @@
 //! stream goes unanswered, against how often the wallet ends up with nothing. The first drifts with
 //! the transport; the second is the one to keep near zero. The reasoning is in ADR 0007.
 
-use std::time::Duration;
-
 use prometheus::{
     Histogram, HistogramOpts, IntCounter, IntCounterVec, IntGauge, Opts, Registry, TextEncoder,
     exponential_buckets,
 };
+use tokio::time::Instant;
 
 use crate::dial::{DialError, Round};
 use crate::handshake::HandshakeError;
@@ -130,7 +129,9 @@ impl ClientMetrics {
                 let establishment = Histogram::with_opts(
                     HistogramOpts::new(
                         "lwd_mixnet_client_establishment_seconds",
-                        "Time from accepting a local connection to holding a stream that answered.",
+                        "Time from accepting a local connection to holding a stream that answered. \
+                         Rounds that found nothing are inside it, each costing a probe deadline, so \
+                         this is where retrying shows up as a wait.",
                     )
                     .buckets(establishment_buckets()?),
                 )?;
@@ -157,9 +158,29 @@ impl ClientMetrics {
         }
     }
 
-    /// What a dial cost and whether it produced a stream. `None` means every attempt was thrown
-    /// away, so the wallet gets a closed socket.
-    pub fn dialled(&self, rounds: &[Round], established: Option<Duration>) {
+    /// A dial that ended holding a stream, `accepted` being when the connection it will carry
+    /// arrived.
+    ///
+    /// The wait is timed from there rather than from the round that answered. A round that finds
+    /// nothing costs a whole probe deadline, and leaving those out would hide what retrying spends
+    /// to reach the rate beside it.
+    pub fn established(&self, rounds: &[Round], accepted: Instant) {
+        self.dialled(rounds);
+        self.establishment.observe(accepted.elapsed().as_secs_f64());
+    }
+
+    /// A dial that ran out of attempts, so the wallet gets a closed socket.
+    pub fn gave_up(&self, rounds: &[Round]) {
+        self.dialled(rounds);
+        self.unestablished.inc();
+    }
+
+    /// What every dial costs, whichever way it ended.
+    ///
+    /// The transport's rate is counted here and the wallet's by the method that called this, both
+    /// off the same dial. That is what makes the two comparable rather than two measurements of two
+    /// different moments.
+    fn dialled(&self, rounds: &[Round]) {
         self.rounds.inc_by(rounds.len() as u64);
         for round in rounds {
             self.streams_opened.inc_by(u64::from(round.opened));
@@ -169,15 +190,8 @@ impl ClientMetrics {
                     .inc();
             }
         }
-        // Counted from the same attempt as the wallet-visible outcome below, which is what makes
-        // the two rates comparable rather than two measurements of two different moments.
         if rounds.first().is_some_and(|round| !round.answered) {
             self.first_round_failures.inc();
-        }
-
-        match established {
-            Some(elapsed) => self.establishment.observe(elapsed.as_secs_f64()),
-            None => self.unestablished.inc(),
         }
     }
 
@@ -380,6 +394,18 @@ mod tests {
             .sum()
     }
 
+    /// What the establishment histogram was told, in seconds.
+    fn establishment_seconds(metrics: &ClientMetrics) -> f64 {
+        metrics
+            .registry()
+            .gather()
+            .iter()
+            .filter(|family| family.name() == "lwd_mixnet_client_establishment_seconds")
+            .flat_map(|family| family.get_metric())
+            .map(|metric| metric.get_histogram().get_sample_sum())
+            .sum()
+    }
+
     /// The two rates the pair is made of, for one dial.
     fn rates(metrics: &ClientMetrics) -> (f64, f64) {
         (
@@ -397,10 +423,7 @@ mod tests {
     #[test]
     fn a_connection_that_needed_a_retry_counts_against_the_transport_but_not_against_the_wallet() {
         let metrics = ClientMetrics::new().unwrap();
-        metrics.dialled(
-            &[unanswered_round(), answering_round()],
-            Some(Duration::from_secs(3)),
-        );
+        metrics.established(&[unanswered_round(), answering_round()], Instant::now());
 
         assert_eq!(rates(&metrics), (1.0, 0.0));
     }
@@ -408,7 +431,7 @@ mod tests {
     #[test]
     fn a_connection_no_stream_answered_counts_against_both() {
         let metrics = ClientMetrics::new().unwrap();
-        metrics.dialled(&[unanswered_round(), unanswered_round()], None);
+        metrics.gave_up(&[unanswered_round(), unanswered_round()]);
 
         assert_eq!(rates(&metrics), (1.0, 1.0));
     }
@@ -416,15 +439,28 @@ mod tests {
     #[test]
     fn a_connection_that_answered_first_time_counts_against_neither() {
         let metrics = ClientMetrics::new().unwrap();
-        metrics.dialled(&[answering_round()], Some(Duration::from_secs(1)));
+        metrics.established(&[answering_round()], Instant::now());
 
         assert_eq!(rates(&metrics), (0.0, 0.0));
+    }
+
+    /// One round spent its whole 10 s probe deadline finding nothing, and the next answered in a
+    /// second. The wallet waited the eleven.
+    #[tokio::test(start_paused = true)]
+    async fn establishment_holds_the_rounds_that_found_nothing() {
+        let metrics = ClientMetrics::new().unwrap();
+        let accepted = Instant::now();
+        tokio::time::advance(Duration::from_secs(11)).await;
+
+        metrics.established(&[unanswered_round(), answering_round()], accepted);
+
+        assert_eq!(establishment_seconds(&metrics), 11.0);
     }
 
     #[test]
     fn a_stream_that_went_unanswered_is_labelled_as_such() {
         let metrics = ClientMetrics::new().unwrap();
-        metrics.dialled(&[unanswered_round()], None);
+        metrics.gave_up(&[unanswered_round()]);
 
         let encoded = encode(metrics.registry()).unwrap();
         assert!(
