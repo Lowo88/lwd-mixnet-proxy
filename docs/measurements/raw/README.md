@@ -41,13 +41,20 @@ sessions.
 
 ## Deployment log
 
-`2026-08-15-bandwidth-cliff.log` sits behind
-[`../2026-08-15-daily-bandwidth-cliff.md`](../2026-08-15-daily-bandwidth-cliff.md): the container log
-of the public testnet serving half, filtered to the two seconds in which its bandwidth allowance
-emptied. All 106 lines the two events produced are here, in order, at the resolution the client logs
-them. Almost all of them come from the SDK rather than from this project.
+Three files sit behind [`../2026-08-15-daily-bandwidth-cliff.md`](../2026-08-15-daily-bandwidth-cliff.md),
+all of them the container log of the public testnet serving half. Almost every line comes from the SDK
+rather than from this project.
 
-Edited the same way and for the same reason as the bench files: the serving half's Nym address, its
-gateway's identity and that gateway's hostname are replaced with `<serving-address>`, `<gateway>` and
-`<gateway-host>`. Terminal colour codes are stripped. Nothing else is touched, and no line is removed
-from the windows.
+| file | what it is |
+|---|---|
+| `2026-08-15-bandwidth-cliff.log` | the 106 lines of the first two nights the bandwidth allowance emptied, 14 and 15 aug |
+| `2026-08-17-bandwidth-cliff.log` | the 98 lines of the next two, 16 and 17 aug |
+| `2026-08-15-inbound-traffic.log` | every reassembly warning the deployment logged in 96 hours, all 13 of them inside one five-minute window |
+
+Each window runs from the first `run out of bandwidth` to the last line of the burst, in the order and
+at the resolution the client logged them. Nothing inside a window was cut.
+
+Terminal colour codes are gone, and so is the container's own timestamp prefix, which leaves the
+timestamp the client wrote. The redaction that applies to the bench files, replacing the serving
+address and the gateway it registered with, had nothing to catch here: no line in any of these windows
+names an address, a gateway or a host.
