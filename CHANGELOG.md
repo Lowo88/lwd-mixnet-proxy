@@ -26,6 +26,12 @@ All notable changes to this project are documented here. The format is loosely b
   window on one of those nights and recovered the same way, so the schedule is not a property of this
   registration. Report, counters and raw logs in
   `docs/measurements/2026-08-15-daily-bandwidth-cliff.md`.
+- The first dialling half measured by someone else. An operator pointed a client at the public
+  testnet serving address from their own machine and published the counters: on the old
+  four-attempt default it left 2 of 30 connections with nothing, the bench running beside it put
+  the per-stream failure rate at 0.60, and the midnight allowance reset reached their gateway too.
+  ADR 0012 rests on those numbers. Report and raw output in
+  `docs/measurements/2026-08-15-external-client.md`.
 
 ## [0.1.0] - 2026-08-12
 

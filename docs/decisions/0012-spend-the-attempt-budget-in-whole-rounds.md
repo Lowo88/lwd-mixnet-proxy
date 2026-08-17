@@ -16,7 +16,7 @@ transport had already failed once.
 [0005](0005-what-the-measurement-has-to-show.md) sets the arithmetic: failures between rounds were
 measured to be independent, so k attempts turn a per-stream rate p into roughly p^k. The budget is the
 exponent, and p is not a constant. Here it has ranged from 2% to 51% across four days, and an
-[operator elsewhere](../measurements/2026-08-15-daily-bandwidth-cliff.md) measured 0.60 on an
+[operator elsewhere](../measurements/2026-08-15-external-client.md) measured 0.60 on an
 afternoon of their own, so a budget calibrated for a good window is not calibrated at all:
 
 | p | k=4 | k=6 | k=9 |
