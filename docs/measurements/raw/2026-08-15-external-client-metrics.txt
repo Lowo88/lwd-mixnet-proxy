@@ -1,0 +1,91 @@
+lwd-mixnet-proxy CLIENT run against public testnet serving address
+==================================================================
+
+Author: LaDale (forum user Lowo88)
+Forum: https://forum.zcashcommunity.com/t/lwd-mixnet-proxy-light-wallet-grpc-over-the-nym-mixnet-and-what-three-days-of-measuring-it-found/57000/7
+
+Method: docker compose up -d client (image lwd-mixnet-proxy:latest)
+Compose project: lwd-mixnet-proxy
+Container: lwd-mixnet-proxy-client-1
+Host: Windows + Docker Desktop
+restart: unless-stopped
+Nym SDK: 1.21.5-rc.3
+Entry gateway: entry-gateway-A
+SERVER_ADDRESS: public-testnet-server
+  (redacted; published public testnet serving address)
+
+CLIENT_HOST_PORT=9068
+CLIENT_METRICS_PORT=9070
+
+UTC_START (compose up -d client): 2026-08-15T16:07:56Z
+UTC_HEALTH_OK (approx):           2026-08-15T16:11:22Z
+UTC_END (metrics snapshot):       2026-08-15T16:18:05Z
+
+--------------------------------------------------------------------
+COMPUTED RATES (from /metrics at end)
+--------------------------------------------------------------------
+connections_total                          = 30
+first_round_failures_total                 = 5
+connections_unestablished_total            = 2
+first_round_failures / connections_total   = 5 / 30 = 16.67%
+connections_unestablished / connections_total = 2 / 30 = 6.67%
+bytes from_mixnet / to_mixnet              = 0 / 0
+streams_discarded unanswered               = 17
+ladder check: 5x3 + 2x1 = 17
+
+NOTE: Local load was TCP connect/close to 127.0.0.1:9068 (no real LWD RPC bytes),
+so bytes_total stayed 0. Mixnet probe establish/discard metrics still moved.
+Separate lwd-mixnet-bench --trials 20 against the same SERVER_ADDRESS ran in a
+one-off container (see 2026-08-15-external-bench.txt).
+
+--------------------------------------------------------------------
+curl -s http://127.0.0.1:9070/health
+--------------------------------------------------------------------
+{"state":"serving"}
+
+--------------------------------------------------------------------
+curl -s http://127.0.0.1:9070/metrics
+--------------------------------------------------------------------
+# HELP lwd_mixnet_client_bytes_total Bytes copied, by direction relative to the mixnet.
+# TYPE lwd_mixnet_client_bytes_total counter
+lwd_mixnet_client_bytes_total{direction="from_mixnet"} 0
+lwd_mixnet_client_bytes_total{direction="to_mixnet"} 0
+# HELP lwd_mixnet_client_connections_ended_total Finished connections, by how they ended.
+# TYPE lwd_mixnet_client_connections_ended_total counter
+lwd_mixnet_client_connections_ended_total{reason="closed"} 28
+# HELP lwd_mixnet_client_connections_in_flight Local connections currently being carried.
+# TYPE lwd_mixnet_client_connections_in_flight gauge
+lwd_mixnet_client_connections_in_flight 0
+# HELP lwd_mixnet_client_connections_total Local connections accepted from the wallet.
+# TYPE lwd_mixnet_client_connections_total counter
+lwd_mixnet_client_connections_total 30
+# HELP lwd_mixnet_client_connections_unestablished_total Connections closed because no stream ever answered. Against lwd_mixnet_client_connections_total this is the failure rate the wallet sees.
+# TYPE lwd_mixnet_client_connections_unestablished_total counter
+lwd_mixnet_client_connections_unestablished_total 2
+# HELP lwd_mixnet_client_establishment_seconds Time from accepting a local connection to holding a stream that answered.
+# TYPE lwd_mixnet_client_establishment_seconds histogram
+lwd_mixnet_client_establishment_seconds_bucket{le="0.5"} 0
+lwd_mixnet_client_establishment_seconds_bucket{le="0.8"} 0
+lwd_mixnet_client_establishment_seconds_bucket{le="1.2800000000000002"} 1
+lwd_mixnet_client_establishment_seconds_bucket{le="2.0480000000000005"} 5
+lwd_mixnet_client_establishment_seconds_bucket{le="3.276800000000001"} 10
+lwd_mixnet_client_establishment_seconds_bucket{le="5.242880000000002"} 21
+lwd_mixnet_client_establishment_seconds_bucket{le="8.388608000000003"} 28
+lwd_mixnet_client_establishment_seconds_bucket{le="13.421772800000006"} 28
+lwd_mixnet_client_establishment_seconds_bucket{le="21.47483648000001"} 28
+lwd_mixnet_client_establishment_seconds_bucket{le="34.359738368000016"} 28
+lwd_mixnet_client_establishment_seconds_bucket{le="+Inf"} 28
+lwd_mixnet_client_establishment_seconds_sum 109.87854687800001
+lwd_mixnet_client_establishment_seconds_count 28
+# HELP lwd_mixnet_client_first_round_failures_total Connections whose first round of streams all went unanswered. Against lwd_mixnet_client_connections_total this is the transport's own failure rate, before any retry.
+# TYPE lwd_mixnet_client_first_round_failures_total counter
+lwd_mixnet_client_first_round_failures_total 5
+# HELP lwd_mixnet_client_rounds_total Rounds of streams opened. Above one per connection is retry doing its job.
+# TYPE lwd_mixnet_client_rounds_total counter
+lwd_mixnet_client_rounds_total 35
+# HELP lwd_mixnet_client_streams_discarded_total Streams thrown away before carrying anything, by why.
+# TYPE lwd_mixnet_client_streams_discarded_total counter
+lwd_mixnet_client_streams_discarded_total{reason="unanswered"} 17
+# HELP lwd_mixnet_client_streams_opened_total Mixnet streams opened, across every round.
+# TYPE lwd_mixnet_client_streams_opened_total counter
+lwd_mixnet_client_streams_opened_total 95

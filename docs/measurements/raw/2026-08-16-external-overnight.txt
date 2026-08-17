@@ -1,0 +1,67 @@
+lwd-mixnet-proxy client overnight check
+=======================================
+
+Author: LaDale (forum user Lowo88)
+Companion to 2026-08-15-external-client-metrics.txt / 2026-08-15-external-client.md
+
+UTC_NOW:                 2026-08-16T16:25:03Z
+APPROX_UPTIME_SINCE:     2026-08-15T16:07:56Z
+APPROX_UPTIME:           ~24h 17m (since 2026-08-15T16:07:56Z; docker RunningFor=24 hours)
+STILL_RUNNING:           yes
+DOCKER:                  lwd-mixnet-proxy-client-1 | Up 24 hours (healthy)
+RestartCount:            0
+HEALTH:                  {"state":"serving"}
+
+Key metrics (now) vs baseline (~2026-08-15T16:18Z)
+--------------------------------------------------
+metric                              baseline    now     delta
+connections_total                   30          30      0
+first_round_failures_total          5           5       0
+connections_unestablished_total     2           2       0
+streams_discarded unanswered        17          17      0
+connections_ended closed            (n/a)       28      -
+rounds_total                        (n/a)       35      -
+streams_opened_total                (n/a)       95      -
+connections_in_flight               (n/a)       0       -
+bytes_total from/to mixnet          (n/a)       0/0     -
+
+Interpretation: counters flat overnight - no new wallet connections after the
+2026-08-15 probe run; process stayed healthy and serving.
+
+Bandwidth / errors
+-----------------------------------------------------------
+Not enough bandwidth WARN count:  14  (all starting 2026-08-16T00:00:01Z)
+managed to claim testnet bandwidth: 1
+Correlate with serving-half cliff: same midnight window on 16 aug (serving half
+00:00:00.231Z-00:00:00.885Z; this client 00:00:01.040Z). Not the same UTC second.
+
+Container log excerpt (ANSI stripped), 16 Aug midnight:
+2026-08-16T00:00:01.040931Z WARN  nym_gateway_client::client: Not enough bandwidth. Trying to get more bandwidth, this might take a while
+2026-08-16T00:00:01.112007Z WARN  nym_gateway_client::client: Not enough bandwidth. Trying to get more bandwidth, this might take a while
+2026-08-16T00:00:01.114498Z WARN  nym_gateway_client::client: Not enough bandwidth. Trying to get more bandwidth, this might take a while
+2026-08-16T00:00:01.134310Z WARN  nym_gateway_client::client: Not enough bandwidth. Trying to get more bandwidth, this might take a while
+2026-08-16T00:00:01.232892Z WARN  nym_gateway_client::client: Not enough bandwidth. Trying to get more bandwidth, this might take a while
+2026-08-16T00:00:01.233088Z WARN  nym_gateway_client::client: Not enough bandwidth. Trying to get more bandwidth, this might take a while
+2026-08-16T00:00:01.233126Z WARN  nym_gateway_client::client: Not enough bandwidth. Trying to get more bandwidth, this might take a while
+2026-08-16T00:00:01.341860Z WARN  nym_gateway_client::client: Not enough bandwidth. Trying to get more bandwidth, this might take a while
+2026-08-16T00:00:01.342017Z WARN  nym_gateway_client::client: Not enough bandwidth. Trying to get more bandwidth, this might take a while
+2026-08-16T00:00:01.342107Z WARN  nym_gateway_client::client: Not enough bandwidth. Trying to get more bandwidth, this might take a while
+2026-08-16T00:00:01.342145Z WARN  nym_gateway_client::client: Not enough bandwidth. Trying to get more bandwidth, this might take a while
+2026-08-16T00:00:01.366647Z WARN  nym_gateway_client::client: Not enough bandwidth. Trying to get more bandwidth, this might take a while
+2026-08-16T00:00:01.632873Z WARN  nym_gateway_client::client: Not enough bandwidth. Trying to get more bandwidth, this might take a while
+2026-08-16T00:00:01.632982Z WARN  nym_gateway_client::client: Not enough bandwidth. Trying to get more bandwidth, this might take a while
+2026-08-16T00:00:01.633085Z INFO  nym_gateway_client::client: managed to claim testnet bandwidth
+
+Full lwd_mixnet_client_* metrics at check time
+----------------------------------------------
+lwd_mixnet_client_bytes_total{direction="from_mixnet"} 0
+lwd_mixnet_client_bytes_total{direction="to_mixnet"} 0
+lwd_mixnet_client_connections_ended_total{reason="closed"} 28
+lwd_mixnet_client_connections_in_flight 0
+lwd_mixnet_client_connections_total 30
+lwd_mixnet_client_connections_unestablished_total 2
+lwd_mixnet_client_establishment_seconds_count 28
+lwd_mixnet_client_first_round_failures_total 5
+lwd_mixnet_client_rounds_total 35
+lwd_mixnet_client_streams_discarded_total{reason="unanswered"} 17
+lwd_mixnet_client_streams_opened_total 95
