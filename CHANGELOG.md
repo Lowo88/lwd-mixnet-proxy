@@ -5,10 +5,20 @@ All notable changes to this project are documented here. The format is loosely b
 
 ## [Unreleased]
 
+### Changed
+- `--probe-attempts` now defaults to 6 instead of 4, which is two whole rounds at the default
+  concurrency (ADR 0012). Four left a second round of a single stream, so a connection the transport
+  had already failed once fell back to sequential retry. Failures between rounds are independent, so
+  the budget is the exponent on the rate a wallet sees: at the worst per-stream rate measured so far,
+  4.7% instead of 13%. The extra streams open only when the first round found nothing.
+
 ### Measurement
-- The public testnet serving half ran 51 hours on one process. Its gateway allowance emptied at
-  exactly 00:00:00 UTC on both midnights it crossed, and the client refilled it in under 300 ms each
-  time. Report, counters and raw log in `docs/measurements/2026-08-15-daily-bandwidth-cliff.md`.
+- The public testnet serving half ran 96 hours on one process. Its gateway allowance emptied inside
+  the first second of 00:00 UTC on all four midnights it crossed, and the client refilled it by
+  itself every time, in 202 to 525 ms. An operator running the dialling half elsewhere hit the same
+  window on one of those nights and recovered the same way, so the schedule is not a property of this
+  registration. Report, counters and raw logs in
+  `docs/measurements/2026-08-15-daily-bandwidth-cliff.md`.
 
 ## [0.1.0] - 2026-08-12
 
