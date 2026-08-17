@@ -12,6 +12,13 @@ All notable changes to this project are documented here. The format is loosely b
   the budget is the exponent on the rate a wallet sees: at the worst per-stream rate measured so far,
   4.7% instead of 13%. The extra streams open only when the first round found nothing.
 
+### Fixed
+- `lwd_mixnet_client_establishment_seconds` recorded the round that answered rather than the wait it
+  is named after. Rounds that came up empty first were left out, each of them a whole probe deadline,
+  so a connection the wallet waited 11 s for could land in a 1 s bucket. It now runs from the moment
+  the connection is accepted. Histograms scraped from earlier builds undercount and do not compare
+  with later ones. The pair of counters beside it is unaffected.
+
 ### Measurement
 - The public testnet serving half ran 96 hours on one process. Its gateway allowance emptied inside
   the first second of 00:00 UTC on all four midnights it crossed, and the client refilled it by

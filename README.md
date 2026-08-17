@@ -217,6 +217,11 @@ The first is the transport's own rate. The second is what a wallet actually expe
 it near zero is the whole job. The first rising on its own means retry is doing what it is there for;
 both rising together is worth a page.
 
+What the pair leaves out is the price. `lwd_mixnet_client_establishment_seconds` runs from the moment
+a wallet's connection is accepted, so a dial that needed a second round carries the deadline the
+first one spent waiting on streams that never answered. Retry buys the second rate down and pays for
+it in that histogram, which is the only place the cost appears.
+
 `/health` reports `starting`, `registered` or `serving`, and answers 200 only for the last. The port
 is bound before the mixnet client connects, so it can be asked about the slow, unreliable part of
 startup: registering with a gateway takes seconds and was seen to fail outright on 2 of 15 attempts.
