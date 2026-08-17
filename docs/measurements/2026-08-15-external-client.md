@@ -42,10 +42,12 @@ connections. Mixnet probe establish/discard counters still moved.
 `lwd-mixnet-bench --trials 20` with interleaved rounds of 1 and 3 ran **alongside**
 the client, not after it: the client was up from 16:07:56Z through the 16:18:05Z
 snapshot; the bench started ~16:15:36Z in a one-off container against the same
-serving address. Two SDK clients therefore shared one host uplink and one
-bandwidth allowance in that window. The bench used `--attempts 6` (tool default);
-the client container used 4. First-round rates stay comparable; wallet-visible
-rates do not, because they come off different attempt budgets.
+serving address. The dialling half keeps no state directory, so each container is a
+fresh SDK client: two of them ran at once, each with its own gateway registration
+and its own bandwidth allowance, sharing the host's uplink and the one serving half
+at the other end. The bench used `--attempts 6` (tool default); the client container
+used 4. First-round rates stay comparable; wallet-visible rates do not, because they
+come off different attempt budgets.
 
 Raw files:
 
@@ -140,4 +142,3 @@ the dialling-half numbers behind that reading are here.
 - The client only reported healthy at 16:11:22Z after coming up at 16:07:56Z; early
   traffic may still have been settling.
 - Windows sleep log was not captured for the 15 Aug window.
-
